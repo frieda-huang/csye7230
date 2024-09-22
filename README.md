@@ -14,7 +14,7 @@ We use the [CVPR 2019 Papers](https://www.kaggle.com/datasets/paultimothymooney/
 
 ## Libraries
 
-- [LlamaIndex](https://www.llamaindex.ai/): Data framework for LLM applications
+- [LangChain](https://www.langchain.com/): Framework for LLM applications
 - [Loguru](https://github.com/Delgan/loguru): Simplified Python logging
 - [pre-commit](https://pre-commit.com/): Multi-language pre-commit hooks manager
 - [Ruff](https://docs.astral.sh/ruff/): Fast Python linter and formatter
@@ -40,10 +40,27 @@ Instructions on how to set up the project locally. For example:
    pre-commit install
    ```
 
+## System Overview
+
+We will pre-index the user's home directory (also fully indexed by macOS Spotlight), which contains most user-accessible files and data. Home directory includes:
+
+- Desktop
+- Documents
+- Downloads
+- Pictures
+
 ## Resources
 
 - [Project Proposal Part A](https://docs.google.com/document/d/1ojm1jtU8u-KRpF2hjG2bRb_PP1dPwSrfAUV27Sl0KeQ/edit?usp=sharing)
 - [UML diagrams](https://drive.google.com/file/d/1AIpMmYtItZ8XGqRUUux1majA1Ue5sLSE/view?usp=sharing)
 
 - [Python: Production-Level Coding Practices](https://medium.com/red-buffer/python-production-level-coding-practices-4c39246e0233)
-- [RAG Evaluation](https://huggingface.co/learn/cookbook/rag_evaluation)
+- [RAG Evaluation (LLM-as-a-judge)](https://huggingface.co/learn/cookbook/rag_evaluation)
+- [Analyze file system and folder structures with Python](https://janakiev.com/blog/python-filesystem-analysis/)
+- [Pytest Best Practices](https://realpython.com/pytest-python-testing/)
+- [Implement semantic cache to improve a RAG system](https://huggingface.co/learn/cookbook/semantic_cache_chroma_vector_database)
+- [Set up eval pipeline](https://www.youtube.com/watch?v=eLXF0VojuSs&t=140s)
+- [Reranking](https://medium.com/google-cloud/reranking-3b5f351cb398)
+- [Evaluating Chunking Strategies for Retrieval](https://research.trychroma.com/evaluating-chunking)
+- [A Reddit post on a new chunking algorithm](https://www.reddit.com/r/LangChain/comments/1flhtxi/a_new_chunking_algorithm_proposal_semantically/)
+- [5 levels of text splitting](https://github.com/FullStackRetrieval-com/RetrievalTutorials/blob/main/tutorials/LevelsOfTextSplitting/5_Levels_Of_Text_Splitting.ipynb)
