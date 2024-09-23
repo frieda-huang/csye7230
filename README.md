@@ -6,7 +6,7 @@
 
 2. We use the [CVPR 2019 Papers](https://www.kaggle.com/datasets/paultimothymooney/cvpr-2019-papers) dataset as our source of PDF documents.
 
-3. We use [LlamaIndex](https://www.llamaindex.ai/) to create a baseline for our evaluation.
+3. We use [Langchain](https://github.com/langchain-ai/langchain) to create a baseline for our evaluation.
 
 ## Dataset
 
