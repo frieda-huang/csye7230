@@ -10,7 +10,15 @@
 
 ## Dataset
 
-We use the [CVPR 2019 Papers](https://www.kaggle.com/datasets/paultimothymooney/cvpr-2019-papers) dataset from Kaggle. This dataset includes over 1,000 academic papers from the Computer Vision and Pattern Recognition (CVPR) 2019 conference
+We use the [CVPR 2019 Papers](https://www.kaggle.com/datasets/paultimothymooney/cvpr-2019-papers) dataset from Kaggle, containing over 1,000 academic papers from the CVPR 2019 conference. From this dataset, 5 papers were randomly selected to generate 10 test sets (`cvpr2019_5papers_testset_12q.csv`) using the [Ragas](https://docs.ragas.io/en/latest/index.html) framework. The dataset can be found at [friedahuang/cvpr2019_5papers_testset_12q](https://huggingface.co/datasets/friedahuang/cvpr2019_5papers_testset_12q) See `ragas_evaluate.py` for the implementation.
+
+1.  Aafaq_Spatio-Temporal_Dynamics_and_Semantic_Attribute_Enriched_Visual_Encoding_for_Video_CVPR_2019_paper.pdf
+2.  Aakur_A_Perceptual_Prediction_Framework_for_Self_Supervised_Event_Segmentation_CVPR_2019_paper.pdf
+3.  Abati_Latent_Space_Autoregression_for_Novelty_Detection_CVPR_2019_paper.pdf
+4.  Abavisani_Improving_the_Performance_of_Unimodal_Dynamic_Hand-Gesture_Recognition_With_Multimodal_CVPR_2019_paper.pdf
+5.  Abbasnejad_A_Generative_Adversarial_Density_Estimator_CVPR_2019_paper.pdf
+
+Additionally, we use the Huggingface dataset [(m-ric/huggingface_doc)](https://huggingface.co/datasets/m-ric/huggingface_doc) to generate 347 question-answer pairs (QA couples). The synthetically generated QA couples can be found at [friedahuang/m-ric_huggingface_doc_347](https://huggingface.co/datasets/friedahuang/m-ric_huggingface_doc_347). We will focus on this evaluation dataset because it has a larger volume and we've already established a baseline RAG system benchmarked against it. See `benchmark_rag.py` for the implementation.
 
 ## Libraries
 
@@ -64,3 +72,4 @@ We will pre-index the user's home directory (also fully indexed by macOS Spotlig
 - [Evaluating Chunking Strategies for Retrieval](https://research.trychroma.com/evaluating-chunking)
 - [A Reddit post on a new chunking algorithm](https://www.reddit.com/r/LangChain/comments/1flhtxi/a_new_chunking_algorithm_proposal_semantically/)
 - [5 levels of text splitting](https://github.com/FullStackRetrieval-com/RetrievalTutorials/blob/main/tutorials/LevelsOfTextSplitting/5_Levels_Of_Text_Splitting.ipynb)
+- [A blog on ripgrep—a line-oriented search tool that recursively searches the current directory for a regex pattern](https://blog.burntsushi.net/ripgrep/)

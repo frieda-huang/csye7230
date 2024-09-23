@@ -7,6 +7,7 @@ class ProjectPaths:
     EVAL = SRC / "eval"
     EVAL_CONFIG = EVAL / "config"
     DATA = ROOT / "data"
+    EVAL_OUTPUT = ROOT / "eval_output"
 
 
 project_paths = ProjectPaths()
