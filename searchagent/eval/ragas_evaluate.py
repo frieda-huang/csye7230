@@ -130,7 +130,7 @@ class RAGASEvaluate:
             os.mkdir(OUTPUT_TESTDATA_DIR)
 
         df = testset.to_pandas()
-        df.to_csv(OUTPUT_TESTDATA_DIR / output_filename)
+        df.to_csv(OUTPUT_TESTDATA_DIR / output_filename, index=False)
 
     @classmethod
     def load_documents(cls, data_source: str, file_type: str) -> List[Document]:
