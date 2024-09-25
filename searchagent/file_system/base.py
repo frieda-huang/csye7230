@@ -30,7 +30,8 @@ class FileSystemValidator(BaseModel):
             return []
         if all(pattern in list(mimetypes.types_map.keys()) for pattern in v):
             return v
-        return []
+        else:
+            raise ValueError(f"One or more file extension patterns are invalid: {v}.")
 
 
 class FileSystemManager:
@@ -72,10 +73,6 @@ class FileSystemManager:
     @property
     def retrievable_files(self):
         return [f".{ext}" for ext in self.file_extension]
-
-    @staticmethod
-    def is_valid_dir(dir_path: str) -> bool:
-        return os.path.isdir(dir_path)
 
     @timer
     def scan(self) -> List[FileInfo]:
@@ -174,7 +171,10 @@ class FileSystemManager:
 
         reader = PdfReader(filepath)
         rpages = reader.pages
-        return [Page(number=i + 1, content=rpages[i]) for i in range(len(rpages))]
+        return [
+            Page(number=i + 1, content=rpages[i].extract_text())
+            for i in range(len(rpages))
+        ]
 
     def extract_text_from_docx(self, filepath: str) -> List[Page]:
         content = textract.process(filepath, extension="docx")

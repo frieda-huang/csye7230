@@ -109,3 +109,5 @@ This PDF presents the benchmarking report for CSYE7230, evaluating the performan
 - [A blog on ripgrep—a line-oriented search tool that recursively searches the current directory for a regex pattern](https://blog.burntsushi.net/ripgrep/)
 - [microsearch—a search engine in 80 lines of Python](https://www.alexmolas.com/2024/02/05/a-search-engine-in-80-lines.html)
 - [Agent architectures](https://langchain-ai.github.io/langgraph/concepts/agentic_concepts/)
+- [Embedding Quantization](https://huggingface.co/blog/embedding-quantization)
+- [Llama3.2 is here](https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/)
