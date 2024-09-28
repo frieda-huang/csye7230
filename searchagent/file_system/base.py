@@ -109,6 +109,15 @@ class FileSystemManager:
     def _get_timestamp(self, timestamp: float) -> datetime:
         return datetime.fromtimestamp(timestamp, timezone.utc)
 
+    def list_files(self, allowed_filetypes: Optional[List[str]]) -> List[str]:
+        """List files from a directory"""
+        return [
+            entry.path
+            for entry in os.scandir(self.dir)
+            if entry.is_file
+            and magic.from_file(entry.path, mime=True) in allowed_filetypes
+        ]
+
     def _yield_filepaths_recursively(self, dir: str) -> Generator[FileInfo, None, None]:
         # Based on https://docs.python.org/3/library/os.html#os.scandir,
         # `os.scandir` is more efficient for large datasets
