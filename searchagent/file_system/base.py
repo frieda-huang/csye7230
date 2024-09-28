@@ -114,7 +114,7 @@ class FileSystemManager:
         return [
             entry.path
             for entry in os.scandir(self.dir)
-            if entry.is_file
+            if entry.is_file()
             and magic.from_file(entry.path, mime=True) in allowed_filetypes
         ]
 

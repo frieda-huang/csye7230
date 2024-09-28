@@ -156,6 +156,15 @@ def test_invalid_dir():
     FileSystemManager(invalid_path)
 
 
+@pytest.mark.parametrize("dir, expected_result", [("", 0), ("d1/subd2", 1)])
+def test_list_files(test_env, dir, expected_result):
+    tmp_path = test_env["tmp_path"]
+    dirpath = f"{tmp_path}/{dir}"
+    fm = FileSystemManager(dirpath)
+    files = fm.list_files(["application/pdf"])
+    assert len(files) == expected_result
+
+
 def test_file_count(test_env):
     tmp_path = test_env["tmp_path"]
     files = test_env["files"]
