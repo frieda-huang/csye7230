@@ -495,10 +495,10 @@ class QAGenerationEvaluator:
         eval_dataset = "friedahuang/m-ric_huggingface_doc_347"
 
         settings_name = (
-            f"chunk:{chunk_size}_"
-            f"embeddings:{embeddings.replace('/', '~')}_"
-            f"rerank:{reranker_model.replace('/', '~')}_"
-            f"reader-model:{llm_model}"
+            f"chunk{chunk_size}_"
+            f"embeddings_{embeddings.replace('/', '~')}_"
+            f"rerank_{reranker_model.replace('/', '~')}_"
+            f"reader-model_{llm_model.replace(':', '-')}"
         )
         output_file_name = f"./eval_output/rag_{settings_name}.json"
         print(f"Running evaluation for {settings_name}:")
