@@ -57,6 +57,40 @@ We will pre-index the user's home directory (also fully indexed by macOS Spotlig
 - Downloads
 - Pictures
 
+## Example
+
+```
+>> response = searchagent.query("find csye7230 project proposal")
+>> response.documents
+
+Output:
+
+Document(metadata={'source': '../proposals/csye7230_project_proposal_part_a.pdf'}, page_content='...')
+Document(metadata={'source': '../proposals/csye7230_project_proposal_part_b.pdf'}, page_content='...')
+Document(metadata={'source': '../proposals/csye7230_project_benchmarking_report.pdf'}, page_content='...')
+
+>> response.answer
+
+Output:
+
+The following files match your query:
+
+1. csye7230_project_proposal_part_a.pdf
+`../proposals/csye7230_project_proposal_part_a.pdf`
+
+This PDF contains the project proposal for CSYE7230, detailing objectives, methodologies, and expected outcomes.
+
+2. csye7230_project_proposal_part_b.pdf
+`../proposals/csye7230_project_proposal_part_b.pdf`
+
+This PDF outlines the implementation plan for project proposal part B, focusing on architecture and design choices.
+
+3. csye7230_project_benchmarking_report.pdf
+`../proposals/csye7230_project_benchmarking_report.pdf`
+
+This PDF presents the benchmarking report for CSYE7230, evaluating the performance metrics and analysis of the project components.
+```
+
 ## Resources
 
 - [Project Proposal Part A](https://docs.google.com/document/d/1ojm1jtU8u-KRpF2hjG2bRb_PP1dPwSrfAUV27Sl0KeQ/edit?usp=sharing)
@@ -73,3 +107,7 @@ We will pre-index the user's home directory (also fully indexed by macOS Spotlig
 - [A Reddit post on a new chunking algorithm](https://www.reddit.com/r/LangChain/comments/1flhtxi/a_new_chunking_algorithm_proposal_semantically/)
 - [5 levels of text splitting](https://github.com/FullStackRetrieval-com/RetrievalTutorials/blob/main/tutorials/LevelsOfTextSplitting/5_Levels_Of_Text_Splitting.ipynb)
 - [A blog on ripgrep—a line-oriented search tool that recursively searches the current directory for a regex pattern](https://blog.burntsushi.net/ripgrep/)
+- [microsearch—a search engine in 80 lines of Python](https://www.alexmolas.com/2024/02/05/a-search-engine-in-80-lines.html)
+- [Agent architectures](https://langchain-ai.github.io/langgraph/concepts/agentic_concepts/)
+- [Embedding Quantization](https://huggingface.co/blog/embedding-quantization)
+- [Llama3.2 is here](https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/)
