@@ -11,6 +11,9 @@ class ProjectPaths:
     EVAL_CONFIG = EVAL / "config"
     DATA = ROOT / "data"
     EVAL_OUTPUT = ROOT / "eval_output"
+    TEST_SOURCES = DATA / "test_sources"
+    PDF_DIR = TEST_SOURCES / "pdfs"
+    SINGLE_FILE_DIR = TEST_SOURCES / "single_file_dir"
 
 
 def timer(func):
