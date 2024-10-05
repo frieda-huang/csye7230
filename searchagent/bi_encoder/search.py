@@ -1,6 +1,7 @@
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import List, Optional, Dict
+from searchagent.file_system.base import FileSystemManager
 import os
 import numpy as np
 
@@ -52,3 +53,32 @@ def run_test_semantic_search():
     print("Top matching documents:")
     for result in results:
         print(f"Document: {result['document']}, Similarity: {result['similarity']:.4f}")
+
+
+
+def run_semantic_search_file_names():
+    # Get the current project home directory
+    directory = os.getcwd()  # Current working directory
+
+    # Create a FileSystemManager object
+    file_manager = FileSystemManager(dir=directory)
+
+    # Get list of document file names
+    documents = file_manager.list_files(file_manager.retrievable_files)
+
+    # Create a SemanticSearch object
+    semantic_search = SemanticSearch(documents)
+
+    # Get user input for the query
+    query = input("Enter your search query: ")
+
+    # Perform the search
+    results = semantic_search.search(query)
+
+    # Display the results
+    print("Top matching documents:")
+    for result in results:
+        print(f"Document: {result['document']}, Similarity: {result['similarity']:.4f}")
+
+
+
