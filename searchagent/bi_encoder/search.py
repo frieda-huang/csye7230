@@ -26,3 +26,29 @@ class SemanticSearch:
 
         return results
 
+
+def run_test_semantic_search():
+    # Sample documents
+    documents = [
+        "The cat sits on the mat.",
+        "Dogs are great companions.",
+        "I love to play football.",
+        "Cats are independent animals.",
+        "Football is played worldwide.",
+        "Pets can be very loyal.",
+        "The quick brown fox jumps over the lazy dog."
+    ]
+
+    # Create a SemanticSearch object
+    semantic_search = SemanticSearch(documents)
+
+    # Get user input for the query
+    query = input("Enter your search query: ")
+
+    # Perform the search
+    results = semantic_search.search(query)
+
+    # Display the results
+    print("Top matching documents:")
+    for result in results:
+        print(f"Document: {result['document']}, Similarity: {result['similarity']:.4f}")
