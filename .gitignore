@@ -167,3 +167,4 @@ cython_debug/
 
 # Ignore macOS system files that store folder view settings
 .DS_Store
+node_modules/
