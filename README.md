@@ -1,12 +1,27 @@
 # Search2.0
 
-## Process
+Search2.0 allows users to search their local files using natural language, powered by LLM agents. It use tools like PDF and code search to find relevant files. For example, a user might ask, “Find the CSYE7230 project proposal,” and the app will return the most relevant file paths, a summary, and allow them to view the content. We will build our agentic system using Llama Stack, developed by Meta.
+
+### PDFSearchTool
+We plan to scale the PDF search tool using ColPali for production. ColPali eliminates the need for complex and fragile layout recognition or OCR pipelines by using a single model that understands both the text and visual content (e.g., layout, charts) of a document. It has delivered the best results so far. We will experiment with the following ideas:
+- Use smaller models such as Llama3.2 and key value cache to reduce latency
+- Cache warming when users are typing
+- KV cache compression
+- Binary Quantization
+- Improve accuracy through test time compute
+- Model distillation
+- Sync local files and remote indexes using hash and hierarchical file traversal
+
+### CodeSearchTool
+TODO
+
+## Evaluation
 
 1. We use LLama3.1 to generate a synthetic evaluation dataset.
 
 2. We use the [CVPR 2019 Papers](https://www.kaggle.com/datasets/paultimothymooney/cvpr-2019-papers) dataset as our source of PDF documents.
 
-3. We use [Langchain](https://github.com/langchain-ai/langchain) to create a baseline for our evaluation.
+3. We use [Langchain](https://github.com/langchain-ai/langchain) to generate synthetic data and create a baseline for our evaluation.
 
 ## Dataset
 
@@ -20,9 +35,28 @@ We use the [CVPR 2019 Papers](https://www.kaggle.com/datasets/paultimothymooney/
 
 Additionally, we use the Huggingface dataset [(m-ric/huggingface_doc)](https://huggingface.co/datasets/m-ric/huggingface_doc) to generate 347 question-answer pairs (QA couples). The synthetically generated QA couples can be found at [friedahuang/m-ric_huggingface_doc_347](https://huggingface.co/datasets/friedahuang/m-ric_huggingface_doc_347). We will focus on this evaluation dataset because it has a larger volume and we've already established a baseline RAG system benchmarked against it. See `benchmark_rag.py` for the implementation.
 
-## Libraries
-
-- [LangChain](https://www.langchain.com/): Framework for LLM applications
+## Tech Stack
+### Frontend
+- Next.js
+- Typescript
+- [shadcn/ui](https://ui.shadcn.com/)
+### Backend
+- Python
+- [Llama Stack](https://github.com/meta-llama/llama-stack): Standardize the building blocks needed to bring generative AI applications to market
+- [pgvector](https://github.com/pgvector/pgvector-python): An extension of PostgreSQL with the ability to store and search vector embeddings alongside regular data
+- [Supabase](https://supabase.com/): Postgres database
+- [LangChain](https://www.langchain.com/): Framework for LLM applications (It is only used for evaluation purpose)
+### Models
+- [ColPali](https://github.com/illuin-tech/colpali): A vision retriever based on the ColBERT architecture and the PaliGemma model
+- [Llama3.2](https://ollama.com/library/llama3.2:latest): llama3.2:latest
+### Devops
+- Vercel
+- GCP
+### MLops
+- [Unsloth](https://github.com/unslothai/unsloth): Finetune & train LLMs
+- [RunPod](https://www.runpod.io/): Cloud computing platform for ML apps
+- [Ollama](https://ollama.com/): Run LLM locally
+### Code Quality & Tooling
 - [Loguru](https://github.com/Delgan/loguru): Simplified Python logging
 - [pre-commit](https://pre-commit.com/): Multi-language pre-commit hooks manager
 - [Ruff](https://docs.astral.sh/ruff/): Fast Python linter and formatter
@@ -48,9 +82,9 @@ Instructions on how to set up the project locally. For example:
    pre-commit install
    ```
 
-## System Overview
+## File Access Scope
 
-We will pre-index the user's home directory (also fully indexed by macOS Spotlight), which contains most user-accessible files and data. Home directory includes:
+We will only access the user’s home directory, which contains most user-accessible files and data. The home directory includes:
 
 - Desktop
 - Documents
@@ -60,8 +94,8 @@ We will pre-index the user's home directory (also fully indexed by macOS Spotlig
 ## Example
 
 ```
->> response = searchagent.query("find csye7230 project proposal")
->> response.documents
+>>> response = searchagent.query("find csye7230 project proposal")
+>>> response.documents
 
 Output:
 
@@ -69,7 +103,7 @@ Document(metadata={'source': '../proposals/csye7230_project_proposal_part_a.pdf'
 Document(metadata={'source': '../proposals/csye7230_project_proposal_part_b.pdf'}, page_content='...')
 Document(metadata={'source': '../proposals/csye7230_project_benchmarking_report.pdf'}, page_content='...')
 
->> response.answer
+>>> response.answer
 
 Output:
 
@@ -91,11 +125,11 @@ This PDF outlines the implementation plan for project proposal part B, focusing 
 This PDF presents the benchmarking report for CSYE7230, evaluating the performance metrics and analysis of the project components.
 ```
 
-## Resources
-
+## Links to Docs
 - [Project Proposal Part A](https://docs.google.com/document/d/1ojm1jtU8u-KRpF2hjG2bRb_PP1dPwSrfAUV27Sl0KeQ/edit?usp=sharing)
 - [UML diagrams](https://drive.google.com/file/d/1AIpMmYtItZ8XGqRUUux1majA1Ue5sLSE/view?usp=sharing)
-
+- [Figma Design](https://www.figma.com/design/H2o8kObQSkwgRQtMvehywK/CSYE7230?node-id=0-1&t=HTzYXd49McEctP41-1)
+## Resources
 - [Python: Production-Level Coding Practices](https://medium.com/red-buffer/python-production-level-coding-practices-4c39246e0233)
 - [RAG Evaluation (LLM-as-a-judge)](https://huggingface.co/learn/cookbook/rag_evaluation)
 - [Analyze file system and folder structures with Python](https://janakiev.com/blog/python-filesystem-analysis/)
