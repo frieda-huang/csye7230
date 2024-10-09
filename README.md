@@ -8,7 +8,6 @@ We plan to scale the PDF search tool using ColPali for production. ColPali elimi
 - Cache warming when users are typing
 - KV cache compression
 - Binary Quantization
-- Improve accuracy through test time compute
 - Model distillation
 - Sync local files and remote indexes using hash and hierarchical file traversal
 
