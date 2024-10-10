@@ -81,6 +81,18 @@ Instructions on how to set up the project locally. For example:
    pre-commit install
    ```
 
+### Database Setup
+1. Create a Database user:
+`CREATE USER searchagent_user WITH PASSWORD 'your_secure_password';`
+2. Create a new database:
+`CREATE DATABASE searchagent OWNER searchagent_user;`
+3. Grant necessary privileges:
+`GRANT ALL PRIVILEGES ON DATABASE searchagent TO searchagent_user;`
+4. Add PostgreSQL connection to .env
+`DATABASE_URL=postgresql+psycopg2://searchagent_user:your_secure_password@localhost:5432/searchagent`
+5. Use the searchagent_user in psql
+`psql -U searchagent_user -d searchagent`
+
 ## File Access Scope
 
 We will only access the user’s home directory, which contains most user-accessible files and data. The home directory includes:

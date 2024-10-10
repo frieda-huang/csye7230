@@ -34,6 +34,9 @@ colpali-engine = ">=0.3.0,<0.4.0"
 torch = "^2.4.1"
 pdf2image = "^1.17.0"
 llama-stack = "^0.0.40"
+sqlalchemy = "^2.0.35"
+psycopg2 = "^2.9.9"
+alembic = "^1.13.3"
 
 
 [tool.poetry.group.dev.dependencies]
