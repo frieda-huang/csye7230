@@ -43,7 +43,6 @@ Additionally, we use the Huggingface dataset [(m-ric/huggingface_doc)](https://h
 - Python
 - [Llama Stack](https://github.com/meta-llama/llama-stack): Standardize the building blocks needed to bring generative AI applications to market
 - [pgvector](https://github.com/pgvector/pgvector-python): An extension of PostgreSQL with the ability to store and search vector embeddings alongside regular data
-- [Supabase](https://supabase.com/): Postgres database
 - [LangChain](https://www.langchain.com/): Framework for LLM applications (It is only used for evaluation purpose)
 ### Models
 - [ColPali](https://github.com/illuin-tech/colpali): A vision retriever based on the ColBERT architecture and the PaliGemma model
@@ -156,3 +155,5 @@ This PDF presents the benchmarking report for CSYE7230, evaluating the performan
 - [Agent architectures](https://langchain-ai.github.io/langgraph/concepts/agentic_concepts/)
 - [Embedding Quantization](https://huggingface.co/blog/embedding-quantization)
 - [Llama3.2 is here](https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/)
+- [The The Ultimate Guide to Vector Database Landscape — 2024 and Beyond](https://medium.com/madhukarkumar/the-ultimate-guide-to-vector-databases-2024-and-beyond-16dfb15bef12)
+- [pgvector: Multi-vector support](https://github.com/pgvector/pgvector/issues/640)
