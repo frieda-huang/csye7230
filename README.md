@@ -44,6 +44,9 @@ Additionally, we use the Huggingface dataset [(m-ric/huggingface_doc)](https://h
 - [Llama Stack](https://github.com/meta-llama/llama-stack): Standardize the building blocks needed to bring generative AI applications to market
 - [pgvector](https://github.com/pgvector/pgvector-python): An extension of PostgreSQL with the ability to store and search vector embeddings alongside regular data
 - [LangChain](https://www.langchain.com/): Framework for LLM applications (It is only used for evaluation purpose)
+### Database
+- [PostgreSQL 17](https://www.postgresql.org/)
+- [pgvector](https://github.com/pgvector/pgvector)
 ### Models
 - [ColPali](https://github.com/illuin-tech/colpali): A vision retriever based on the ColBERT architecture and the PaliGemma model
 - [Llama3.2](https://ollama.com/library/llama3.2:latest): llama3.2:latest
