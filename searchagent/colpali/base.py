@@ -8,13 +8,15 @@ from colpali_engine.models import ColPali
 from colpali_engine.models.paligemma.colpali.processing_colpali import ColPaliProcessor
 from colpali_engine.utils.torch_utils import ListDataset, get_torch_device
 from PIL import Image
-from torch.utils.data import DataLoader
-from tqdm import tqdm
-from transformers import BatchFeature, PreTrainedModel
-
 from searchagent.colpali.models import ImageMetadata, StoredImageData
 from searchagent.colpali.pdf_images_dataset import PDFImagesDataset
 from searchagent.colpali.pdf_images_processor import PDFImagesProcessor
+from searchagent.db_connection import Session, engine
+from searchagent.models import Page
+from sqlalchemy import Index
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+from transformers import BatchFeature, PreTrainedModel
 
 
 class ColPaliRag:
@@ -114,7 +116,7 @@ class ColPaliRag:
                 Tuple[BatchFeature, List[ImageMetadata]],
             ],
         ],
-        batch_size: int = 4,
+        batch_size: int = 4,  # 4 PDF image pages
     ) -> DataLoader[str]:
         if isinstance(dataset, List) and dataset and isinstance(dataset[0], str):
             dataset = ListDataset[str](dataset)
@@ -186,7 +188,7 @@ class ColPaliRag:
             embeddings.extend(individual_embeddings)
 
         if isinstance(dataset, PDFImagesDataset):
-            self.index(embeddings, mdata)
+            self.naive_index(embeddings, mdata)
             self._store_index_locally()
 
         return embeddings
@@ -202,7 +204,7 @@ class ColPaliRag:
     def embed_query(self, query: str) -> List[torch.Tensor]:
         return self._embed([query], self.processor.process_queries)
 
-    def index(self, embeddings: List[torch.Tensor], mdata: List[Dict]):
+    def naive_index(self, embeddings: List[torch.Tensor], mdata: List[Dict]):
         from datetime import datetime, timezone
 
         """Structure embeddings for faster retrieval
@@ -235,6 +237,42 @@ class ColPaliRag:
             }
         )
 
+    @property
+    def max_sim(self):
+        return """
+        CREATE OR REPLACE FUNCTION max_sim(document vector[], query vector[])
+        RETURNS double precision AS $$
+            WITH queries AS (
+                SELECT row_number() OVER () AS query_number, * FROM (SELECT unnest(query) AS query)
+            ),
+            documents AS (
+                SELECT unnest(document) AS document
+            ),
+            similarities AS (
+                SELECT query_number, 1 - (document <=> query) AS similarity
+                FROM queries
+                CROSS JOIN documents
+            ),
+            max_similarities AS (
+                SELECT MAX(similarity) AS max_similarity
+                FROM similarities
+                GROUP BY query_number
+            )
+            SELECT SUM(max_similarity)
+            FROM max_similarities
+        $$ LANGUAGE SQL;
+        """
+
+    def build_hnsw_maxsim_index(self):
+        index = Index(
+            "file_embedding_hnsw_l2_idx",
+            Page.embedding,
+            postgresql_using="hnsw",
+            postgresql_with={"m": 16, "ef_construction": 64},
+            postgresql_ops={"embedding": "vector_l2_ops"},
+        )
+        index.create(engine)
+
     def _store_index_locally(self):
         import os
 
@@ -242,6 +280,29 @@ class ColPaliRag:
         self.stored_filepath = f"{os.getcwd()}/{output_file}"
         with open(output_file, "w") as f:
             json.dump(self.embeddings_by_page_id, f, indent=4)
+
+    def upsert_embeddings(self, embeddings, mdata):
+        """Upsert embeddings to PostgreSQL"""
+
+        for key, value in self.embeddings_by_page_id.items():
+            parts = key.split("_")
+            page_id = parts[0]
+            pdf_id = parts[1]
+            embedding = value["embedding"]
+            created_at = value["created_at"]
+            modified_at = value["modified_at"]
+
+            page = Page(
+                page_number=page_id,
+                embedding=embedding.numpy(),
+                embedding_dim=128,
+                file_id=pdf_id,
+                last_modified=modified_at,
+                created_at=created_at,
+            )
+
+            with Session.begin() as session:
+                session.add(page)
 
     def load_stored_embeddings(self, filepath: str) -> Dict[str, StoredImageData]:
         """Load stored embeddings in memory"""
