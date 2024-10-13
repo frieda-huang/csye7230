@@ -1,6 +1,9 @@
 from datetime import datetime
-from pgvector.sqlalchemy import Vector
-from sqlalchemy import ForeignKey, Integer, LargeBinary, String
+from typing import Optional
+
+import numpy as np
+from pgvector.sqlalchemy import VECTOR
+from sqlalchemy import ARRAY, ForeignKey, Integer, LargeBinary, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 """
@@ -18,8 +21,8 @@ class Page(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     page_number: Mapped[int] = mapped_column(Integer, nullable=False)
-    text_content: Mapped[str] = mapped_column(String)
-    binary_content: Mapped[bytes] = mapped_column(LargeBinary)
+    text_content: Mapped[Optional[str]] = mapped_column(String)
+    binary_content: Mapped[Optional[bytes]] = mapped_column(LargeBinary)
     last_modified: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(String, nullable=False)
 
@@ -42,7 +45,7 @@ class File(Base):
     filepath: Mapped[str] = mapped_column(String, nullable=False)
     filetype: Mapped[str] = mapped_column(String, nullable=False)
     total_pages: Mapped[int] = mapped_column(Integer, nullable=False)
-    summary: Mapped[str] = mapped_column(String)
+    summary: Mapped[Optional[str]] = mapped_column(String)
     last_modified: Mapped[datetime] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(String, nullable=False)
 
@@ -61,7 +64,7 @@ class Embedding(Base):
     __tablename__ = "embedding"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    vector_embedding: Mapped[list[Vector]] = mapped_column(Vector(128))
+    vector_embedding: Mapped[list[np.array]] = mapped_column(ARRAY(VECTOR(128)))
     dim: Mapped[int] = mapped_column(Integer, default=128)
     embedding_type: Mapped[str] = mapped_column(String, default="multi-vector")
 
@@ -99,7 +102,7 @@ class Query(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str] = mapped_column(String, nullable=False)
-    vector_embedding: Mapped[Vector] = mapped_column(Vector)
+    vector_embedding: Mapped[np.array] = mapped_column(VECTOR)
     created_at: Mapped[datetime] = mapped_column(String, nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
 
