@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import numpy as np
 import torch
 from colpali_engine.models import ColPali
 from colpali_engine.models.paligemma.colpali.processing_colpali import ColPaliProcessor
@@ -12,7 +13,8 @@ from searchagent.colpali.models import ImageMetadata, StoredImageData
 from searchagent.colpali.pdf_images_dataset import PDFImagesDataset
 from searchagent.colpali.pdf_images_processor import PDFImagesProcessor
 from searchagent.db_connection import Session, engine
-from searchagent.models import Page
+from searchagent.models import Base, Embedding, File, Folder, Page
+from searchagent.utils import get_now
 from sqlalchemy import Index
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -190,6 +192,7 @@ class ColPaliRag:
         if isinstance(dataset, PDFImagesDataset):
             self.naive_index(embeddings, mdata)
             self._store_index_locally()
+            self.upsert_embeddings()
 
         return embeddings
 
@@ -205,8 +208,6 @@ class ColPaliRag:
         return self._embed([query], self.processor.process_queries)
 
     def naive_index(self, embeddings: List[torch.Tensor], mdata: List[Dict]):
-        from datetime import datetime, timezone
-
         """Structure embeddings for faster retrieval
         {
             "page_1": {
@@ -224,14 +225,13 @@ class ColPaliRag:
             ...
         }
         """
-        now = datetime.now(timezone.utc).isoformat()
         self.embeddings_by_page_id.update(
             {
                 f'{metadata["page_id"]}_{metadata["pdf_id"]}': {
                     "embedding": embedding.tolist(),
                     "metadata": metadata,
-                    "created_at": now,
-                    "modified_at": now,
+                    "created_at": get_now(),
+                    "modified_at": get_now(),
                 }
                 for embedding, metadata in zip(embeddings, mdata)
             }
@@ -281,8 +281,9 @@ class ColPaliRag:
         with open(output_file, "w") as f:
             json.dump(self.embeddings_by_page_id, f, indent=4)
 
-    def upsert_embeddings(self, embeddings, mdata):
+    def upsert_embeddings(self):
         """Upsert embeddings to PostgreSQL"""
+        Base.metadata.create_all(engine)
 
         for key, value in self.embeddings_by_page_id.items():
             parts = key.split("_")
@@ -291,18 +292,48 @@ class ColPaliRag:
             embedding = value["embedding"]
             created_at = value["created_at"]
             modified_at = value["modified_at"]
-
-            page = Page(
-                page_number=page_id,
-                embedding=embedding.numpy(),
-                embedding_dim=128,
-                file_id=pdf_id,
-                last_modified=modified_at,
-                created_at=created_at,
-            )
+            metadata = value["metadata"]
+            filename = metadata["filename"]
+            filepath = metadata["filepath"]
+            total_pages = metadata["total_pages"]
+            folder_name = str(self.input_dir.name)
+            folder_path = str(self.input_dir)
 
             with Session.begin() as session:
-                session.add(page)
+                session.query()
+                f = Folder(
+                    folder_name=folder_name,
+                    folder_path=folder_path,
+                    created_at=get_now(),
+                    user_id=1,
+                    files=[
+                        File(
+                            filename=filename,
+                            filepath=filepath,
+                            filetype="pdf",
+                            total_pages=total_pages,
+                            last_modified=modified_at,
+                            created_at=created_at,
+                            pages=[
+                                Page(
+                                    page_number=page_id,
+                                    last_modified=modified_at,
+                                    created_at=created_at,
+                                    file_id=pdf_id,
+                                    embeddings=[
+                                        Embedding(
+                                            vector_embedding=[
+                                                np.array(e) for e in embedding
+                                            ],
+                                            page_id=page_id,
+                                        )
+                                    ],
+                                )
+                            ],
+                        )
+                    ],
+                )
+                session.add(f)
 
     def load_stored_embeddings(self, filepath: str) -> Dict[str, StoredImageData]:
         """Load stored embeddings in memory"""
