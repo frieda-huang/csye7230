@@ -91,9 +91,13 @@ Instructions on how to set up the project locally. For example:
 3. Grant necessary privileges:
 `GRANT ALL PRIVILEGES ON DATABASE searchagent TO searchagent_user;`
 4. Add PostgreSQL connection to .env
-`DATABASE_URL=postgresql+psycopg2://searchagent_user:your_secure_password@localhost:5432/searchagent`
+`DATABASE_URL=postgresql+psycopg://searchagent_user:your_secure_password@localhost:5432/searchagent`
 5. Use the searchagent_user in psql
 `psql -U searchagent_user -d searchagent`
+6. Ensure searchagent_user has superuser privileges by logging as the superuser
+`ALTER USER searchagent_user WITH SUPERUSER;`
+7. Enable the pgvector extension
+`CREATE EXTENSION vector;`
 
 ## File Access Scope
 
