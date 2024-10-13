@@ -2,6 +2,7 @@ from pathlib import Path
 from time import time
 
 from loguru import logger
+from datetime import datetime, timezone
 
 
 class ProjectPaths:
@@ -31,6 +32,10 @@ def timer(func):
         return result
 
     return wrap_function
+
+
+def get_now():
+    return datetime.now(timezone.utc).isoformat()
 
 
 project_paths = ProjectPaths()

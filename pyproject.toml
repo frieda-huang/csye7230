@@ -37,6 +37,7 @@ llama-stack = "^0.0.40"
 sqlalchemy = "^2.0.35"
 alembic = "^1.13.3"
 psycopg = {extras = ["binary", "pool"], version = "^3.2.3"}
+bcrypt = "^4.2.0"
 
 
 [tool.poetry.group.dev.dependencies]
