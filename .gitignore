@@ -169,3 +169,4 @@ cython_debug/
 .DS_Store
 node_modules/
 poetry.lock
+alembic/script.py.mako
