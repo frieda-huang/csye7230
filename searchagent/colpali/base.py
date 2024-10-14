@@ -15,7 +15,7 @@ from searchagent.colpali.pdf_images_processor import PDFImagesProcessor
 from searchagent.db_connection import Session, engine
 from searchagent.models import Base, Embedding, File, Folder, Page
 from searchagent.utils import get_now
-from sqlalchemy import Index
+from sqlalchemy import Index, select
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import BatchFeature, PreTrainedModel
@@ -288,10 +288,8 @@ class ColPaliRag:
         for key, value in self.embeddings_by_page_id.items():
             parts = key.split("_")
             page_id = parts[0]
-            pdf_id = parts[1]
             embedding = value["embedding"]
-            created_at = value["created_at"]
-            modified_at = value["modified_at"]
+
             metadata = value["metadata"]
             filename = metadata["filename"]
             filepath = metadata["filepath"]
@@ -300,40 +298,46 @@ class ColPaliRag:
             folder_path = str(self.input_dir)
 
             with Session.begin() as session:
-                session.query()
-                f = Folder(
-                    folder_name=folder_name,
-                    folder_path=folder_path,
+                # Check if folder already exists
+                folder_stm = select(Folder).filter_by(folder_path=folder_path)
+                folder = session.scalar(folder_stm)
+                if not folder:
+                    folder = Folder(
+                        folder_name=folder_name,
+                        folder_path=folder_path,
+                        created_at=get_now(),
+                        user_id=9,  # Replace with actual user ID
+                    )
+                    session.add(folder)
+
+                # Check if file already exists
+                file_stm = select(File).filter_by(filepath=filepath)
+                file = session.scalar(file_stm)
+                if not file:
+                    file = File(
+                        filename=filename,
+                        filepath=filepath,
+                        filetype="pdf",
+                        total_pages=total_pages,
+                        last_modified=get_now(),
+                        created_at=get_now(),
+                        folder=folder,
+                    )
+                    session.add(file)
+
+                page = Page(
+                    page_number=page_id,
+                    last_modified=get_now(),
                     created_at=get_now(),
-                    user_id=1,
-                    files=[
-                        File(
-                            filename=filename,
-                            filepath=filepath,
-                            filetype="pdf",
-                            total_pages=total_pages,
-                            last_modified=modified_at,
-                            created_at=created_at,
-                            pages=[
-                                Page(
-                                    page_number=page_id,
-                                    last_modified=modified_at,
-                                    created_at=created_at,
-                                    file_id=pdf_id,
-                                    embeddings=[
-                                        Embedding(
-                                            vector_embedding=[
-                                                np.array(e) for e in embedding
-                                            ],
-                                            page_id=page_id,
-                                        )
-                                    ],
-                                )
-                            ],
-                        )
-                    ],
+                    file=file,
                 )
-                session.add(f)
+                session.add(page)
+
+                embedding = Embedding(
+                    vector_embedding=[np.array(e) for e in embedding], page=page
+                )
+
+                session.add(embedding)
 
     def load_stored_embeddings(self, filepath: str) -> Dict[str, StoredImageData]:
         """Load stored embeddings in memory"""
