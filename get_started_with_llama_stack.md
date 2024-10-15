@@ -2,6 +2,14 @@
 
 After running `llama stack build`, we created a new file `csye7230-searchagent-stack-run.yaml` under the path `/Users/YOUR_NAME/.llama/builds/conda`
 
+### Caveat
+
+Since Llama Stack currently [doesn’t support the safety feature for Ollama](https://github.com/meta-llama/llama-stack), we need to disable the safety shield by using the --disable-safety flag, as shown below:
+
+`python3 -m examples.agents.vacation localhost 11434 --disable-safety`
+
+Also notice that we are using pgvector for memory. That means we need to configure the database with `dbname=remote:pgvector`, `user=llamastack_user`, and `password=attentionisallyouneed`
+
 ```
 version: '2'
 built_at: '2024-10-14T22:51:08.838065'
