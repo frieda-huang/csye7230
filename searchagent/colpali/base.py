@@ -3,17 +3,19 @@ import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import ml_dtypes
 import numpy as np
 import torch
 from colpali_engine.models import ColPali
 from colpali_engine.models.paligemma.colpali.processing_colpali import ColPaliProcessor
 from colpali_engine.utils.torch_utils import ListDataset, get_torch_device
 from PIL import Image
+from searchagent.colpali.colpali_strategy import ColPaliStrategyContext, MaxSimStrategy
 from searchagent.colpali.models import ImageMetadata, StoredImageData
 from searchagent.colpali.pdf_images_dataset import PDFImagesDataset
 from searchagent.colpali.pdf_images_processor import PDFImagesProcessor
 from searchagent.db_connection import Session, engine
-from searchagent.models import Base, Embedding, File, Folder, Page
+from searchagent.models import Embedding, File, Folder, Page
 from searchagent.utils import get_now
 from sqlalchemy import Index, select
 from torch.utils.data import DataLoader
@@ -191,7 +193,7 @@ class ColPaliRag:
 
         if isinstance(dataset, PDFImagesDataset):
             self.naive_index(embeddings, mdata)
-            self._store_index_locally()
+            self._store_index_locally()  # TODO: make it optional
             self.upsert_embeddings()
 
         return embeddings
@@ -237,32 +239,6 @@ class ColPaliRag:
             }
         )
 
-    @property
-    def max_sim(self):
-        return """
-        CREATE OR REPLACE FUNCTION max_sim(document vector[], query vector[])
-        RETURNS double precision AS $$
-            WITH queries AS (
-                SELECT row_number() OVER () AS query_number, * FROM (SELECT unnest(query) AS query)
-            ),
-            documents AS (
-                SELECT unnest(document) AS document
-            ),
-            similarities AS (
-                SELECT query_number, 1 - (document <=> query) AS similarity
-                FROM queries
-                CROSS JOIN documents
-            ),
-            max_similarities AS (
-                SELECT MAX(similarity) AS max_similarity
-                FROM similarities
-                GROUP BY query_number
-            )
-            SELECT SUM(max_similarity)
-            FROM max_similarities
-        $$ LANGUAGE SQL;
-        """
-
     def build_hnsw_maxsim_index(self):
         index = Index(
             "file_embedding_hnsw_l2_idx",
@@ -283,7 +259,6 @@ class ColPaliRag:
 
     def upsert_embeddings(self):
         """Upsert embeddings to PostgreSQL"""
-        Base.metadata.create_all(engine)
 
         for key, value in self.embeddings_by_page_id.items():
             parts = key.split("_")
@@ -336,7 +311,6 @@ class ColPaliRag:
                 embedding = Embedding(
                     vector_embedding=[np.array(e) for e in embedding], page=page
                 )
-
                 session.add(embedding)
 
     def load_stored_embeddings(self, filepath: str) -> Dict[str, StoredImageData]:
@@ -394,6 +368,21 @@ class ColPaliRag:
 
         # This will return a list of (pdf_id, page_id) for top results
         top_metadata = [indexed_metadata[idx.item()] for idx in top_indices]
+
+        # TODO: Query against PostgreSQL using MaxSim, AKA exact search
+        # TODO: For approximate search, use HNSW for indexing;
+        # Caveat: store one vector per row --> NEED to store embeddings differently
+        # TODO: Store query vector to the Query table
+        # TODO: (1) Apply binary quantization (2) Use hamming distance to scale ColPali
+        ctx = ColPaliStrategyContext(strategy=MaxSimStrategy())
+
+        # Based on https://github.com/pytorch/pytorch/issues/109873
+        query_embeddings = [
+            np.array(elem)
+            for embed in qs
+            for elem in embed.view(dtype=torch.uint16).numpy().view(ml_dtypes.bfloat16)
+        ]
+        ctx.execute_ranking_function(query_embeddings, top_k)
 
         return self.retrieve_page_info(top_metadata)
 
