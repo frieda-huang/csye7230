@@ -15,7 +15,7 @@ from searchagent.colpali.pdf_images_dataset import PDFImagesDataset
 from searchagent.colpali.pdf_images_processor import PDFImagesProcessor
 from searchagent.colpali.search_engine.strategy_factory import SearchStrategyFactory
 from searchagent.db_connection import Session, engine
-from searchagent.models import Embedding, File, Folder, Page
+from searchagent.models import Embedding, File, FlattenedEmbedding, Folder, Page
 from searchagent.utils import get_now
 from sqlalchemy import Index, select
 from torch.utils.data import DataLoader
@@ -259,11 +259,13 @@ class ColPaliRag:
 
     def upsert_embeddings(self):
         """Upsert embeddings to PostgreSQL"""
+        # TODO: It's getting a bit crazy, will refactor later
 
         for key, value in self.embeddings_by_page_id.items():
             parts = key.split("_")
             page_id = parts[0]
-            embedding = value["embedding"]
+            embeddings = value["embedding"]
+            vector_embedding = [np.array(e) for e in embeddings]
 
             metadata = value["metadata"]
             filename = metadata["filename"]
@@ -309,9 +311,21 @@ class ColPaliRag:
                 session.add(page)
 
                 embedding = Embedding(
-                    vector_embedding=[np.array(e) for e in embedding], page=page
+                    vector_embedding=vector_embedding,
+                    page=page,
+                    last_modified=get_now(),
+                    created_at=get_now(),
                 )
                 session.add(embedding)
+
+                for e in vector_embedding:
+                    flattened_embedding = FlattenedEmbedding(
+                        vector_embedding=e,
+                        last_modified=get_now(),
+                        created_at=get_now(),
+                        embedding=embedding,
+                    )
+                    session.add(flattened_embedding)
 
     def load_stored_embeddings(self, filepath: str) -> Dict[str, StoredImageData]:
         """Load stored embeddings in memory"""
