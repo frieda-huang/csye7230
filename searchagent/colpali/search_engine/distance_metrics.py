@@ -2,18 +2,38 @@ from abc import ABC, abstractmethod
 
 import psycopg
 from pgvector.psycopg import register_vector
+from searchagent.db_connection import DBNAME
+from searchagent.models import VECT_DIM
 
 
 class DistanceMetric(ABC):
     @abstractmethod
-    def calculate():
+    def calculate(self):
         """Calculate similarity scores"""
         pass
 
 
 class HammingDistance(DistanceMetric):
-    def calculate():
-        pass
+    def calculate(self):
+        SQL_HAMMING_FUNC = f"""
+        CREATE OR REPLACE FUNCTION hamming(query vector[])
+        RETURNS integer AS $$
+            WITH queries AS (
+                SELECT row_number() OVER () AS query_number, *
+                FROM (SELECT unnest(query) AS query)
+            ),
+            SELECT query_number, q.query, fe.vector_embedding,
+            binary_quantize(fe.vector_embedding)::bit({VECT_DIM}) <~>
+            binary_quantize(q.query) AS hamming_dist
+            FROM queries q
+            CROSS JOIN flattened_embedding fe
+            ORDER BY hamming_dist
+            LIMIT 20
+        $$ LANGUAGE SQL
+        """
+        with psycopg.connect(dbname=DBNAME, autocommit=True) as conn:
+            register_vector(conn)
+            conn.execute(SQL_HAMMING_FUNC)
 
 
 class CosineSimilarity(DistanceMetric):
@@ -28,6 +48,10 @@ class EuclideanDistance(DistanceMetric):
 
 class MaxSim(DistanceMetric):
     def calculate(self):
+        """Based on
+        https://github.com/pgvector/pgvector-python/blob/master/examples/colbert/exact.py
+        """
+
         SQL_MAXSIM_FUNC = """
         CREATE OR REPLACE FUNCTION max_sim(document vector[], query vector[])
         RETURNS double precision AS $$
@@ -50,6 +74,6 @@ class MaxSim(DistanceMetric):
             FROM max_similarities
         $$ LANGUAGE SQL
         """
-        with psycopg.connect(dbname="searchagent", autocommit=True) as conn:
+        with psycopg.connect(dbname=DBNAME, autocommit=True) as conn:
             register_vector(conn)
             conn.execute(SQL_MAXSIM_FUNC)

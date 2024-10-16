@@ -5,6 +5,7 @@ import psycopg
 from pgvector.psycopg import register_vector
 from psycopg.cursor import Row
 from searchagent.colpali.search_engine.distance_metrics import MaxSim
+from searchagent.db_connection import DBNAME
 from searchagent.utils import VectorList
 
 
@@ -42,7 +43,7 @@ class ExactMaxSimSearchStrategy(SearchStrategy):
         ORDER BY
             tp.max_sim DESC;
         """
-        with psycopg.connect(dbname="searchagent", autocommit=True) as conn:
+        with psycopg.connect(dbname=DBNAME, autocommit=True) as conn:
             register_vector(conn)
             result = conn.execute(
                 SQL_RETRIEVE_TOP_K_DOCS, (query_embeddings,)
@@ -55,10 +56,24 @@ class ExactMaxSimSearchStrategy(SearchStrategy):
 
 
 class ANNHNSWHammingSearchStrategy(SearchStrategy):
-    """Scale MaxSim using Binary Quantization and Hamming Distance"""
+    """Scale MaxSim using Binary Quantization and Hamming Distance
+
+    Convert the floating point 128-dimensional vectors to 128-bit vectors
+    """
 
     def search(self, query_embeddings: VectorList, top_k: int):
-        pass
+        # Rerank using cosine distance
+        SQL_RERANK = f"""
+        SELECT *
+        FROM (
+            SELECT *
+            FROM hamming(%s)
+        )
+        ORDER BY flattened_embedding.vector_embedding <=> unnest(%s)
+        LIMIT {top_k};
+        """
+        with psycopg.connect(dbname=DBNAME, autocommit=True) as conn:
+            conn.execute(SQL_RERANK, (query_embeddings,))
 
 
 class ANNIVFFlatEuclideanSearchStrategy(SearchStrategy):
