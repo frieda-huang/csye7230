@@ -11,6 +11,8 @@ Check out the ERD Database design here:
 https://drive.google.com/file/d/1AIpMmYtItZ8XGqRUUux1majA1Ue5sLSE/view?usp=sharing
 """
 
+VECT_DIM = 128
+
 
 class Base(DeclarativeBase):
     pass
@@ -23,7 +25,7 @@ class Page(Base):
     page_number: Mapped[int] = mapped_column(Integer, nullable=False)
     text_content: Mapped[Optional[str]] = mapped_column(String)
     binary_content: Mapped[Optional[bytes]] = mapped_column(LargeBinary)
-    last_modified: Mapped[str] = mapped_column(String, nullable=False)
+    last_modified: Mapped[datetime] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(String, nullable=False)
 
     file_id: Mapped[int] = mapped_column(ForeignKey("file.id"))
@@ -64,14 +66,35 @@ class Embedding(Base):
     __tablename__ = "embedding"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    vector_embedding: Mapped[list[np.array]] = mapped_column(ARRAY(VECTOR(128)))
+    vector_embedding: Mapped[list[np.array]] = mapped_column(ARRAY(VECTOR(VECT_DIM)))
+    last_modified: Mapped[datetime] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(String, nullable=False)
 
     page_id: Mapped[int] = mapped_column(ForeignKey("page.id"))
 
     page: Mapped[Page] = relationship(back_populates="embeddings")
+    flattened_embeddings: Mapped[list["FlattenedEmbedding"]] = relationship(
+        back_populates="embedding"
+    )
 
     def __repr__(self) -> str:
-        return f"<Embedding(page_id={self.page_id}, file_id={self.file_id}, dim={self.dim})>"
+        return f"<Embedding(page_id={self.page_id})>"
+
+
+class FlattenedEmbedding(Base):
+    __tablename__ = "flattened_embedding"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    vector_embedding: Mapped[np.array] = mapped_column(VECTOR(VECT_DIM))
+    last_modified: Mapped[datetime] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(String, nullable=False)
+
+    embedding_id: Mapped[int] = mapped_column(ForeignKey("embedding.id"))
+
+    embedding: Mapped[Embedding] = relationship(back_populates="flattened_embeddings")
+
+    def __repr__(self) -> str:
+        return f"<FlattenedEmbedding(embedding_id={self.embedding_id})>"
 
 
 class Folder(Base):
