@@ -65,8 +65,6 @@ class Embedding(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     vector_embedding: Mapped[list[np.array]] = mapped_column(ARRAY(VECTOR(128)))
-    dim: Mapped[int] = mapped_column(Integer, default=128)
-    embedding_type: Mapped[str] = mapped_column(String, default="multi-vector")
 
     page_id: Mapped[int] = mapped_column(ForeignKey("page.id"))
 
