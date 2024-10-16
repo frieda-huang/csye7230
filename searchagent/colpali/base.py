@@ -10,10 +10,10 @@ from colpali_engine.models import ColPali
 from colpali_engine.models.paligemma.colpali.processing_colpali import ColPaliProcessor
 from colpali_engine.utils.torch_utils import ListDataset, get_torch_device
 from PIL import Image
-from searchagent.colpali.colpali_strategy import ColPaliStrategyContext, MaxSimStrategy
 from searchagent.colpali.models import ImageMetadata, StoredImageData
 from searchagent.colpali.pdf_images_dataset import PDFImagesDataset
 from searchagent.colpali.pdf_images_processor import PDFImagesProcessor
+from searchagent.colpali.search_engine.strategy_factory import SearchStrategyFactory
 from searchagent.db_connection import Session, engine
 from searchagent.models import Embedding, File, Folder, Page
 from searchagent.utils import get_now
@@ -369,12 +369,10 @@ class ColPaliRag:
         # This will return a list of (pdf_id, page_id) for top results
         top_metadata = [indexed_metadata[idx.item()] for idx in top_indices]
 
-        # TODO: Query against PostgreSQL using MaxSim, AKA exact search
         # TODO: For approximate search, use HNSW for indexing;
         # Caveat: store one vector per row --> NEED to store embeddings differently
         # TODO: Store query vector to the Query table
         # TODO: (1) Apply binary quantization (2) Use hamming distance to scale ColPali
-        ctx = ColPaliStrategyContext(strategy=MaxSimStrategy())
 
         # Based on https://github.com/pytorch/pytorch/issues/109873
         query_embeddings = [
@@ -382,7 +380,9 @@ class ColPaliRag:
             for embed in qs
             for elem in embed.view(dtype=torch.uint16).numpy().view(ml_dtypes.bfloat16)
         ]
-        ctx.execute_ranking_function(query_embeddings, top_k)
+
+        ss = SearchStrategyFactory.create_search_strategy("ExactMaxSim")
+        ss.search(query_embeddings, top_k)
 
         return self.retrieve_page_info(top_metadata)
 

@@ -1,8 +1,12 @@
+from datetime import datetime, timezone
 from pathlib import Path
 from time import time
+from typing import List, TypeAlias
 
+import numpy as np
 from loguru import logger
-from datetime import datetime, timezone
+
+VectorList: TypeAlias = List[np.array]
 
 
 class ProjectPaths:
