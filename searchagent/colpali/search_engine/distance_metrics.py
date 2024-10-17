@@ -17,17 +17,25 @@ class HammingDistance(DistanceMetric):
     def calculate(self):
         SQL_HAMMING_FUNC = f"""
         CREATE OR REPLACE FUNCTION hamming(query vector[])
-        RETURNS integer AS $$
+        RETURNS TABLE (
+            query vector({VECT_DIM}),
+            vector_embedding vector({VECT_DIM}),
+            hamming_dist integer
+        ) AS $$
             WITH queries AS (
-                SELECT row_number() OVER () AS query_number, *
-                FROM (SELECT unnest(query) AS query)
-            ),
-            SELECT query_number, q.query, fe.vector_embedding,
-            binary_quantize(fe.vector_embedding)::bit({VECT_DIM}) <~>
-            binary_quantize(q.query) AS hamming_dist
-            FROM queries q
-            CROSS JOIN flattened_embedding fe
-            ORDER BY hamming_dist
+                SELECT unnest(query) AS query
+            )
+            SELECT
+                q.query
+                fe.vector_embedding,
+                binary_quantize(fe.vector_embedding)::bit({VECT_DIM}) <~>
+                binary_quantize(q.query) AS hamming_dist
+            FROM
+                queries q
+            CROSS JOIN
+                flattened_embedding fe
+            ORDER BY
+                hamming_dist
             LIMIT 20
         $$ LANGUAGE SQL
         """

@@ -395,7 +395,7 @@ class ColPaliRag:
             for elem in embed.view(dtype=torch.uint16).numpy().view(ml_dtypes.bfloat16)
         ]
 
-        ss = SearchStrategyFactory.create_search_strategy("ExactMaxSim")
+        ss = SearchStrategyFactory.create_search_strategy("ANNHNSWHamming")
         ss.search(query_embeddings, top_k)
 
         return self.retrieve_page_info(top_metadata)
