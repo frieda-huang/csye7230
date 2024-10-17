@@ -15,9 +15,13 @@ class DistanceMetric(ABC):
 
 class HammingDistance(DistanceMetric):
     def calculate(self):
+        SQL_DROP_FUNC = """
+        DROP FUNCTION IF EXISTS hamming(vector[]);
+        """
         SQL_HAMMING_FUNC = f"""
         CREATE OR REPLACE FUNCTION hamming(query vector[])
         RETURNS TABLE (
+            embedding_id integer,
             query vector({VECT_DIM}),
             vector_embedding vector({VECT_DIM}),
             hamming_dist integer
@@ -26,7 +30,8 @@ class HammingDistance(DistanceMetric):
                 SELECT unnest(query) AS query
             )
             SELECT
-                q.query
+                fe.embedding_id,
+                q.query,
                 fe.vector_embedding,
                 binary_quantize(fe.vector_embedding)::bit({VECT_DIM}) <~>
                 binary_quantize(q.query) AS hamming_dist
@@ -35,12 +40,13 @@ class HammingDistance(DistanceMetric):
             CROSS JOIN
                 flattened_embedding fe
             ORDER BY
-                hamming_dist
+                hamming_dist ASC
             LIMIT 20
         $$ LANGUAGE SQL
         """
         with psycopg.connect(dbname=DBNAME, autocommit=True) as conn:
             register_vector(conn)
+            conn.execute(SQL_DROP_FUNC)
             conn.execute(SQL_HAMMING_FUNC)
 
 

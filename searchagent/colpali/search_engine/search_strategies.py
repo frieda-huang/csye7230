@@ -37,9 +37,9 @@ class ExactMaxSimSearchStrategy(SearchStrategy):
         FROM
             top_pages tp
         JOIN
-            page p ON tp.page_id = p.id
+            page p ON p.id = tp.page_id
         JOIN
-            file f ON p.file_id = f.id
+            file f ON f.id = p.file_id
         ORDER BY
             tp.max_sim DESC;
         """
@@ -67,13 +67,26 @@ class ANNHNSWHammingSearchStrategy(SearchStrategy):
 
         # Rerank using cosine distance
         SQL_RERANK = f"""
-        SELECT *
-        FROM (
+        WITH hamming_results AS (
             SELECT *
-            FROM hamming(%s)
+            FROM (
+                SELECT *
+                FROM hamming(%s)
+            )
+            ORDER BY vector_embedding <=> query
+            LIMIT {top_k}
         )
-        ORDER BY vector_embedding <=> query
-        LIMIT {top_k};
+        SELECT
+            p.*,
+            f.*
+        FROM
+            hamming_results hr
+        JOIN
+            embedding e ON e.id = hr.embedding_id
+        JOIN
+            page p ON p.id = e.page_id
+        JOIN
+            file f ON f.id = p.file_id
         """
         with psycopg.connect(dbname=DBNAME, autocommit=True) as conn:
             register_vector(conn)
