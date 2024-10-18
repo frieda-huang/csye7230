@@ -123,7 +123,7 @@ class Query(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str] = mapped_column(String, nullable=False)
-    vector_embedding: Mapped[np.array] = mapped_column(VECTOR)
+    vector_embedding: Mapped[list[np.array]] = mapped_column(ARRAY(VECTOR(VECT_DIM)))
     created_at: Mapped[datetime] = mapped_column(String, nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
 
