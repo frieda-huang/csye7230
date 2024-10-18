@@ -15,8 +15,15 @@ from searchagent.colpali.pdf_images_dataset import PDFImagesDataset
 from searchagent.colpali.pdf_images_processor import PDFImagesProcessor
 from searchagent.colpali.search_engine.strategy_factory import SearchStrategyFactory
 from searchagent.db_connection import Session, engine
-from searchagent.models import Embedding, File, FlattenedEmbedding, Folder, Page
-from searchagent.utils import get_now
+from searchagent.models import (
+    Embedding,
+    File,
+    FlattenedEmbedding,
+    Folder,
+    Page,
+    Query,
+)
+from searchagent.utils import VectorList, get_now
 from sqlalchemy import Index, select
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -49,6 +56,7 @@ class ColPaliRag:
         self.embeddings_by_page_id = {}
         self.stored_embeddings: Dict[str, StoredImageData] = {}
         self.stored_filepath = None
+        self.user_id = 1  # Replace with actual user ID
 
         self.input_dir = Path(input_dir)
         self.store_locally = store_locally
@@ -176,13 +184,13 @@ class ColPaliRag:
         for batch in tqdm(dataloader):
             if isinstance(dataset, PDFImagesDataset):
                 batch_images, metadata = batch
-                batch_images = {k: v.to(self.device) for k, v in batch_images.items()}
+                batches = {k: v.to(self.device) for k, v in batch_images.items()}
                 mdata.extend(meta.to_json() for meta in metadata)
             else:
-                batch_images = {k: v.to(self.device) for k, v in batch.items()}
+                batches = {k: v.to(self.device) for k, v in batch.items()}
 
             # Move images to GPU and get embeddings
-            batch_embeddings = self.model(**batch_images)
+            batch_embeddings = self.model(**batches)
 
             # Embeddings for a single PDF page; it is of the shape (1030, 128)
             # 32x32=1024 image patches and 6 instruction text tokens
@@ -194,7 +202,7 @@ class ColPaliRag:
         if isinstance(dataset, PDFImagesDataset):
             self.naive_index(embeddings, mdata)
             self._store_index_locally()  # TODO: make it optional
-            self.upsert_embeddings()
+            self.upsert_doc_embeddings()
 
         return embeddings
 
@@ -257,7 +265,17 @@ class ColPaliRag:
         with open(output_file, "w") as f:
             json.dump(self.embeddings_by_page_id, f, indent=4)
 
-    def upsert_embeddings(self):
+    def upsert_query_embeddings(self, query: str, query_embeddings: VectorList):
+        with Session.begin() as session:
+            q = Query(
+                text=query,
+                vector_embedding=query_embeddings,
+                created_at=get_now(),
+                user_id=self.user_id,
+            )
+            session.add(q)
+
+    def upsert_doc_embeddings(self):
         """Upsert embeddings to PostgreSQL"""
         # TODO: It's getting a bit crazy, will refactor later
 
@@ -283,7 +301,7 @@ class ColPaliRag:
                         folder_name=folder_name,
                         folder_path=folder_path,
                         created_at=get_now(),
-                        user_id=9,  # Replace with actual user ID
+                        user_id=self.user_id,
                     )
                     session.add(folder)
 
@@ -383,17 +401,14 @@ class ColPaliRag:
         # This will return a list of (pdf_id, page_id) for top results
         top_metadata = [indexed_metadata[idx.item()] for idx in top_indices]
 
-        # TODO: For approximate search, use HNSW for indexing;
-        # Caveat: store one vector per row --> NEED to store embeddings differently
-        # TODO: Store query vector to the Query table
-        # TODO: (1) Apply binary quantization (2) Use hamming distance to scale ColPali
-
         # Based on https://github.com/pytorch/pytorch/issues/109873
         query_embeddings = [
             np.array(elem)
             for embed in qs
             for elem in embed.view(dtype=torch.uint16).numpy().view(ml_dtypes.bfloat16)
         ]
+
+        self.upsert_query_embeddings(query, query_embeddings)
 
         ss = SearchStrategyFactory.create_search_strategy("ANNHNSWHamming")
         ss.search(query_embeddings, top_k)
