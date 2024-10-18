@@ -4,7 +4,8 @@ from typing import List
 import psycopg
 from pgvector.psycopg import register_vector
 from psycopg.cursor import Row
-from searchagent.colpali.search_engine.distance_metrics import MaxSim, HammingDistance
+from psycopg.rows import dict_row
+from searchagent.colpali.search_engine.distance_metrics import HammingDistance, MaxSim
 from searchagent.db_connection import DBNAME
 from searchagent.utils import VectorList
 
@@ -77,7 +78,9 @@ class ANNHNSWHammingSearchStrategy(SearchStrategy):
             LIMIT {top_k}
         )
         SELECT
+            p.id AS page_id,
             p.*,
+            f.id AS file_id,
             f.*
         FROM
             hamming_results hr
@@ -88,12 +91,16 @@ class ANNHNSWHammingSearchStrategy(SearchStrategy):
         JOIN
             file f ON f.id = p.file_id
         """
-        with psycopg.connect(dbname=DBNAME, autocommit=True) as conn:
+        with psycopg.connect(
+            dbname=DBNAME, autocommit=True, row_factory=dict_row
+        ) as conn:
             register_vector(conn)
             result = conn.execute(SQL_RERANK, (query_embeddings,)).fetchall()
 
             for row in result:
-                print(row)
+                print(
+                    f"Filename: {row['filename']}, Page ID: {row['page_id']}, File ID: {row['file_id']}"
+                )
 
         return result
 

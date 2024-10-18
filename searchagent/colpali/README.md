@@ -24,6 +24,7 @@ This is a wrapper on [colpali](https://github.com/illuin-tech/colpali/tree/main)
 
 ## Improvement
 
+-   Loading the model takes quite some time
 -   Extract text from PDFs and use LLM to generate summary for each file
 -   Use approximate search
 -   Improve memory efficiency by dividing each embedding into sub-vectors.

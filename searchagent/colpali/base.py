@@ -14,7 +14,7 @@ from searchagent.colpali.models import ImageMetadata, StoredImageData
 from searchagent.colpali.pdf_images_dataset import PDFImagesDataset
 from searchagent.colpali.pdf_images_processor import PDFImagesProcessor
 from searchagent.colpali.search_engine.strategy_factory import SearchStrategyFactory
-from searchagent.db_connection import Session, engine
+from searchagent.db_connection import Session
 from searchagent.models import (
     Embedding,
     File,
@@ -24,7 +24,7 @@ from searchagent.models import (
     Query,
 )
 from searchagent.utils import VectorList, get_now
-from sqlalchemy import Index, select
+from sqlalchemy import select
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import BatchFeature, PreTrainedModel
@@ -57,6 +57,7 @@ class ColPaliRag:
         self.stored_embeddings: Dict[str, StoredImageData] = {}
         self.stored_filepath = None
         self.user_id = 1  # Replace with actual user ID
+        self.metadata = None
 
         self.input_dir = Path(input_dir)
         self.store_locally = store_locally
@@ -186,6 +187,7 @@ class ColPaliRag:
                 batch_images, metadata = batch
                 batches = {k: v.to(self.device) for k, v in batch_images.items()}
                 mdata.extend(meta.to_json() for meta in metadata)
+                self.metadata = mdata
             else:
                 batches = {k: v.to(self.device) for k, v in batch.items()}
 
@@ -199,25 +201,29 @@ class ColPaliRag:
             # Collect all embeddings
             embeddings.extend(individual_embeddings)
 
-        if isinstance(dataset, PDFImagesDataset):
-            self.naive_index(embeddings, mdata)
-            self._store_index_locally()  # TODO: make it optional
-            self.upsert_doc_embeddings()
-
         return embeddings
 
-    def embed_images(self) -> List[List[torch.Tensor]]:
+    def embed_images(self) -> List[torch.Tensor]:
         """Embed images using custom Dataset
         Check this link on PyTorch custom Dataset:
         https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
         """
         processed_images = PDFImagesDataset(self.images, self.pdf_metadata)
-        return self._embed(processed_images, self.image_collate_fn)
+        embeddings = self._embed(processed_images, self.image_collate_fn)
+
+        self.build_embed_metadata(embeddings, self.metadata)
+
+        if self.store_locally:
+            self._store_index_locally()
+        else:
+            self.upsert_doc_embeddings()
+
+        return embeddings
 
     def embed_query(self, query: str) -> List[torch.Tensor]:
         return self._embed([query], self.processor.process_queries)
 
-    def naive_index(self, embeddings: List[torch.Tensor], mdata: List[Dict]):
+    def build_embed_metadata(self, embeddings: List[torch.Tensor], mdata: List[Dict]):
         """Structure embeddings for faster retrieval
         {
             "page_1": {
@@ -246,16 +252,6 @@ class ColPaliRag:
                 for embedding, metadata in zip(embeddings, mdata)
             }
         )
-
-    def build_hnsw_maxsim_index(self):
-        index = Index(
-            "file_embedding_hnsw_l2_idx",
-            Page.embedding,
-            postgresql_using="hnsw",
-            postgresql_with={"m": 16, "ef_construction": 64},
-            postgresql_ops={"embedding": "vector_l2_ops"},
-        )
-        index.create(engine)
 
     def _store_index_locally(self):
         import os
@@ -355,7 +351,7 @@ class ColPaliRag:
 
     def search(
         self, query: str, top_k: int = 3, filepath: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+    ) -> Optional[List[Dict[str, Any]]]:
         """Search for the relevant file based on the query
 
         Args:
@@ -375,14 +371,8 @@ class ColPaliRag:
             else self.embed_images()
         )
 
-        if not filepath:
+        if self.stored_filepath and not filepath:
             self.load_stored_embeddings(self.stored_filepath)
-
-        # Create a mapping of (page_id, pdf_id) for retrieval
-        indexed_metadata = [
-            (data.metadata.page_id, data.metadata.pdf_id)
-            for data in self.stored_embeddings.values()
-        ]
 
         # Run similarity search over the page embeddings for all the pages in the collection
         # top_indices has the shape of
@@ -398,9 +388,6 @@ class ColPaliRag:
         else:
             top_indices = top_indices.squeeze()
 
-        # This will return a list of (pdf_id, page_id) for top results
-        top_metadata = [indexed_metadata[idx.item()] for idx in top_indices]
-
         # Based on https://github.com/pytorch/pytorch/issues/109873
         query_embeddings = [
             np.array(elem)
@@ -408,12 +395,21 @@ class ColPaliRag:
             for elem in embed.view(dtype=torch.uint16).numpy().view(ml_dtypes.bfloat16)
         ]
 
+        if self.stored_embeddings:
+            # Create a mapping of (page_id, pdf_id) for retrieval
+            indexed_metadata = [
+                (data.metadata.page_id, data.metadata.pdf_id)
+                for data in self.stored_embeddings.values()
+            ]
+
+            # This will return a list of (pdf_id, page_id) for top results
+            top_metadata = [indexed_metadata[idx.item()] for idx in top_indices]
+            return self.retrieve_page_info(top_metadata)
+
         self.upsert_query_embeddings(query, query_embeddings)
 
         ss = SearchStrategyFactory.create_search_strategy("ANNHNSWHamming")
         ss.search(query_embeddings, top_k)
-
-        return self.retrieve_page_info(top_metadata)
 
     def retrieve_page_info(
         self, top_metadata: List[Tuple[str, int]]
