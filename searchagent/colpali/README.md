@@ -16,6 +16,7 @@ This is a wrapper on [colpali](https://github.com/illuin-tech/colpali/tree/main)
 -   [Scalar and binary quantization for pgvector vector search and storage](https://jkatz05.com/post/postgres/pgvector-scalar-binary-quantization/)
 -   [Best practices for querying vector data for gen AI apps in PostgreSQL](https://www.youtube.com/watch?v=PhIC4JlYg7A)
 -   [HNSW](https://www.pinecone.io/learn/series/faiss/hnsw/)
+-   [Why separating compute from storage is a bad idea for late interaction models](https://x.com/jobergum/status/1846945345646821533)
 
 ## Relevant GitHub Repos
 
