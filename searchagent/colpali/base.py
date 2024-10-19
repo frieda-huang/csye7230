@@ -204,6 +204,8 @@ class ColPaliRag:
         return embeddings
 
     def embed_images(self) -> List[torch.Tensor]:
+        # TODO: Set up a Cron job to sync files and their embeddings each night
+        # TODO: Dynamically identify which PDF images need to be indexed
         """Embed images using custom Dataset
         Check this link on PyTorch custom Dataset:
         https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
@@ -361,9 +363,33 @@ class ColPaliRag:
                 Path to "embeddings_metadata.json"
 
         Returns:
-            List[Dict[str, Any]]: If the relevant file is found,
-            it returns the page embeddings along with its metadata
+            Optional[List[Dict[str, Any]]]: If the relevant file is found,
+            it returns the page embeddings along with its metadata. Or None
         """
+
+        # Run similarity search over the page embeddings for all the pages in the collection
+        # top_indices has the shape of
+        # tensor([[12,  0, 14],
+        # [15, 14, 11]])
+        qs = self.embed_query(query)
+
+        # Based on https://github.com/pytorch/pytorch/issues/109873
+        query_embeddings = [
+            np.array(elem)
+            for embed in qs
+            for elem in embed.view(dtype=torch.uint16).numpy().view(ml_dtypes.bfloat16)
+        ]
+
+        if filepath or self.store_locally:
+            return self.retrieve_from_local_storage(filepath, qs, top_k)
+
+        self.upsert_query_embeddings(query, query_embeddings)
+        ss = SearchStrategyFactory.create_search_strategy("ANNHNSWHamming")
+        ss.search(query_embeddings, top_k)
+
+    def retrieve_from_local_storage(
+        self, filepath: str, qs: List[torch.Tensor], top_k: int
+    ) -> List[Dict[str, Any]]:
 
         embeddings = (
             [data.embedding for data in self.load_stored_embeddings(filepath).values()]
@@ -371,14 +397,9 @@ class ColPaliRag:
             else self.embed_images()
         )
 
-        if self.stored_filepath and not filepath:
+        if self.store_locally and not filepath:
             self.load_stored_embeddings(self.stored_filepath)
 
-        # Run similarity search over the page embeddings for all the pages in the collection
-        # top_indices has the shape of
-        # tensor([[12,  0, 14],
-        # [15, 14, 11]])
-        qs = self.embed_query(query)
         scores = self.processor.score(qs, embeddings)
         _, top_indices = torch.topk(scores, k=top_k, dim=1)
 
@@ -388,28 +409,15 @@ class ColPaliRag:
         else:
             top_indices = top_indices.squeeze()
 
-        # Based on https://github.com/pytorch/pytorch/issues/109873
-        query_embeddings = [
-            np.array(elem)
-            for embed in qs
-            for elem in embed.view(dtype=torch.uint16).numpy().view(ml_dtypes.bfloat16)
+        # Create a mapping of (page_id, pdf_id) for retrieval
+        indexed_metadata = [
+            (data.metadata.page_id, data.metadata.pdf_id)
+            for data in self.stored_embeddings.values()
         ]
 
-        if self.stored_embeddings:
-            # Create a mapping of (page_id, pdf_id) for retrieval
-            indexed_metadata = [
-                (data.metadata.page_id, data.metadata.pdf_id)
-                for data in self.stored_embeddings.values()
-            ]
-
-            # This will return a list of (pdf_id, page_id) for top results
-            top_metadata = [indexed_metadata[idx.item()] for idx in top_indices]
-            return self.retrieve_page_info(top_metadata)
-
-        self.upsert_query_embeddings(query, query_embeddings)
-
-        ss = SearchStrategyFactory.create_search_strategy("ANNHNSWHamming")
-        ss.search(query_embeddings, top_k)
+        # This will return a list of (pdf_id, page_id) for top results
+        top_metadata = [indexed_metadata[idx.item()] for idx in top_indices]
+        return self.retrieve_page_info(top_metadata)
 
     def retrieve_page_info(
         self, top_metadata: List[Tuple[str, int]]
