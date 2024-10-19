@@ -99,7 +99,7 @@ class ANNHNSWHammingSearchStrategy(SearchStrategy):
 
             for row in result:
                 print(
-                    f"Filename: {row['filename']}, Page ID: {row['page_id']}, File ID: {row['file_id']}"
+                    f"Filename: {row['filename']}, Page number: {row['page_number']}, File ID: {row['file_id']}"
                 )
 
         return result
