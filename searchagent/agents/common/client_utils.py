@@ -5,12 +5,17 @@
 # the root directory of this source tree.
 import uuid
 from enum import Enum
-from typing import Any, List, Literal, Optional
+from typing import Any, List, Literal, Optional, Union
 
-from typing_extensions import TypedDict
 
-from llama_stack_client.types import *  # noqa: F403
-from llama_stack_client.types.agent_create_params import *  # noqa: F403
+from llama_stack_client.types import SamplingParams
+from llama_stack_client.types.agent_create_params import (
+    AgentConfig,
+    AgentConfigToolMemoryToolDefinition,
+    AgentConfigToolCodeInterpreterToolDefinition,
+    AgentConfigToolWolframAlphaToolDefinition,
+    AgentConfigToolPhotogenToolDefinition,
+)
 from llama_stack_client import LlamaStackClient
 
 from pydantic import BaseModel, Field
@@ -18,6 +23,12 @@ from termcolor import cprint
 
 from .custom_tools import CustomTool
 from .execute_with_custom_tools import AgentWithCustomToolExecutor
+
+ToolDefinition = Union[
+    AgentConfigToolMemoryToolDefinition,
+    AgentConfigToolPhotogenToolDefinition,
+    AgentConfigToolCodeInterpreterToolDefinition,
+]
 
 
 class AttachmentBehavior(Enum):
@@ -32,7 +43,7 @@ class ApiKeys(BaseModel):
     bing: Optional[str] = None
 
 
-def default_builtins(api_keys: ApiKeys) -> List[TypedDict]:
+def default_builtins(api_keys: ApiKeys) -> List[ToolDefinition]:
     return [
         AgentConfigToolWolframAlphaToolDefinition(
             type="wolfram_alpha", api_key=api_keys.wolfram_alpha
