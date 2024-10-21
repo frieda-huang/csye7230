@@ -170,3 +170,4 @@ cython_debug/
 node_modules/
 poetry.lock
 alembic/script.py.mako
+.vscode
