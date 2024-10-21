@@ -22,6 +22,16 @@ This is a wrapper on [colpali](https://github.com/illuin-tech/colpali/tree/main)
 
 -   [byaldi](https://github.com/AnswerDotAI/byaldi): A lightweight wrapper around the `colpali-engine`
 
+## Limitations
+
+Updated: 10/20/2024
+
+1. Currently, we are adding new folder, files, and pages sequentially. We need to bulk insert into multiple tables parallelly.
+2. We don't have a mechanism to dynamically detect new folders/files to embed yet. `embed_images()` assumes all PDF images need to be processed. This might be solved through LLM agents.
+3. We can only process one directory. We need to be able to process multiple directories simultaneously.
+4. When user first searches, the system needs to know whether embeddings already exist in vector DB or the file simply doesn't exist.
+    - Have an efficient way of finding the relevant embedding clusters; if they don't exist, know what action to take.
+
 ## Improvement
 
 -   Loading the model takes quite some time
