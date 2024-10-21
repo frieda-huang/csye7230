@@ -273,9 +273,17 @@ class ColPaliRag:
             )
             session.add(q)
 
+    def folder_has_embeddings(self):
+        folder_path = str(self.input_dir)
+
+        with Session.begin() as session:
+            folder_stm = select(Folder).filter_by(folder_path=folder_path)
+            return session.scalar(folder_stm)
+
     def upsert_doc_embeddings(self):
         """Upsert embeddings to PostgreSQL"""
         # TODO: It's getting a bit crazy, will refactor later
+        # TODO: Do batch processing when adding new folder, file...
 
         for key, value in self.embeddings_by_page_id.items():
             parts = key.split("_")
@@ -292,9 +300,7 @@ class ColPaliRag:
 
             with Session.begin() as session:
                 # Check if folder already exists
-                folder_stm = select(Folder).filter_by(folder_path=folder_path)
-                folder = session.scalar(folder_stm)
-                if not folder:
+                if not self.folder_has_embeddings():
                     folder = Folder(
                         folder_name=folder_name,
                         folder_path=folder_path,
@@ -382,6 +388,9 @@ class ColPaliRag:
 
         if filepath or self.store_locally:
             return self.retrieve_from_local_storage(filepath, qs, top_k)
+
+        if not self.folder_has_embeddings():
+            self.embed_images()
 
         self.upsert_query_embeddings(query, query_embeddings)
         ss = SearchStrategyFactory.create_search_strategy("ANNHNSWHamming")
