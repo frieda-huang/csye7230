@@ -16,7 +16,7 @@ TODO
 
 ## Evaluation
 
-1. We use LLama3.1 to generate a synthetic evaluation dataset.
+1. We use [LLama3.2-vision](https://ollama.com/x/llama3.2-vision:11b-instruct-q8_0) to generate a synthetic evaluation dataset.
 
 2. We use the [CVPR 2019 Papers](https://www.kaggle.com/datasets/paultimothymooney/cvpr-2019-papers) dataset as our source of PDF documents.
 
