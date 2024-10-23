@@ -1,10 +1,12 @@
 import threading
 import time
 
-from searchagent.sync_manager.db import insert_file_changes
+from searchagent.sync_manager.db import insert_data
 from searchagent.sync_manager.file_change_detector import Watcher
 
 # TODO: Periodically delete old entries
+# TODO: Allow more than one dir
+input_dir = "."
 INTERVAL = 300  # 5 MINS
 event_list = []
 
@@ -13,12 +15,12 @@ def periodic_insert():
     while True:
         time.sleep(INTERVAL)
         if event_list:
-            insert_file_changes(event_list)
+            insert_data(event_list)
             event_list.clear()
 
 
 def monitor():
-    w = Watcher(".", event_list)
+    w = Watcher(input_dir, event_list)
     w.run()
 
     try:

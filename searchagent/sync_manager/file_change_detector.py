@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
+from searchagent.file_system.base import FileSystemManager
 from searchagent.utils import get_now
 from watchdog.events import (
     DirCreatedEvent,
@@ -13,6 +14,7 @@ from watchdog.events import (
     FileDeletedEvent,
     FileModifiedEvent,
     FileMovedEvent,
+    FileSystemEvent,
     FileSystemEventHandler,
 )
 from watchdog.observers import Observer
@@ -30,6 +32,7 @@ class FileChangeEvent:
     filepath: str
     change_type: FileChangeType
     timestamp: datetime
+    dest_path: Optional[str] = None
 
 
 class Watcher:
@@ -39,33 +42,42 @@ class Watcher:
         self.event_list = event_list
 
     def run(self):
-        event_handler = EventHandler(self.event_list)
+        event_handler = EventHandler(self.event_list, self.path)
         self.observer.schedule(event_handler, self.path, recursive=True)
         self.observer.start()
 
 
 class EventHandler(FileSystemEventHandler):
-    def __init__(self, event_list: List[FileChangeEvent]):
+    def __init__(self, event_list: List[FileChangeEvent], path: str):
         self.event_list = event_list
         self.last_modified = datetime.now()
+        self.allowed_extensions = FileSystemManager(dir=path).file_extension
 
     def create_event(
-        self, event: DirCreatedEvent | FileCreatedEvent, change_type: FileChangeType
+        self, event: FileSystemEvent, change_type: FileChangeType
     ) -> FileChangeEvent:
+        dest_path = getattr(event, "dest_path", None)
         return FileChangeEvent(
-            filepath=event.src_path, change_type=change_type, timestamp=get_now()
+            filepath=event.src_path,
+            change_type=change_type,
+            timestamp=get_now(),
+            dest_path=dest_path,
         )
 
+    def file_is_valid(self, event: FileSystemEvent) -> bool:
+        ext = event.src_path.split(".")[-1]
+        return not event.is_directory and ext in self.allowed_extensions
+
     def on_created(self, event: DirCreatedEvent | FileCreatedEvent) -> None:
-        if not event.is_directory:
+        if self.file_is_valid(event):
             self.event_list.append(self.create_event(event, FileChangeType.CREATED))
 
     def on_deleted(self, event: DirDeletedEvent | FileDeletedEvent) -> None:
-        if not event.is_directory:
+        if self.file_is_valid(event):
             self.event_list.append(self.create_event(event, FileChangeType.DELETED))
 
     def on_modified(self, event: DirModifiedEvent | FileModifiedEvent) -> None:
-        if not event.is_directory:
+        if self.file_is_valid(event):
             if datetime.now() - self.last_modified < timedelta(seconds=1):
                 return
             else:
@@ -75,5 +87,5 @@ class EventHandler(FileSystemEventHandler):
                 )
 
     def on_moved(self, event: DirMovedEvent | FileMovedEvent) -> None:
-        if not event.is_directory:
+        if self.file_is_valid(event):
             self.event_list.append(self.create_event(event, FileChangeType.MOVED))
