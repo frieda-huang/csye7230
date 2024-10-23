@@ -17,7 +17,7 @@ def periodic_insert():
             event_list.clear()
 
 
-if __name__ == "__main__":
+def monitor():
     w = Watcher(".", event_list)
     w.run()
 
