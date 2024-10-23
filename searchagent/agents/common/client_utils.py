@@ -63,7 +63,7 @@ def enable_memory_tool(cfg: QuickToolConfig) -> bool:
 # of adding complex options here.
 async def make_agent_config_with_custom_tools(
     model: str = "Llama3.1-8B-Instruct",
-    disable_safety: bool = False,
+    disable_safety: bool = True,
     tool_config: QuickToolConfig = QuickToolConfig(),
 ) -> AgentConfig:
     input_shields = []
