@@ -3,7 +3,6 @@
 #
 # This source code is licensed under the terms described in the LICENSE file in
 # the root directory of this source tree.
-import os
 import uuid
 from enum import Enum
 from typing import Any, List, Literal, Optional, Union
@@ -15,8 +14,6 @@ from llama_stack_client.types.agent_create_params import (
     AgentConfigToolCodeInterpreterToolDefinition,
     AgentConfigToolMemoryToolDefinition,
     AgentConfigToolPhotogenToolDefinition,
-    AgentConfigToolSearchToolDefinition,
-    AgentConfigToolWolframAlphaToolDefinition,
 )
 from pydantic import BaseModel, Field
 from termcolor import cprint
@@ -35,51 +32,6 @@ class AttachmentBehavior(Enum):
     rag = "rag"
     code_interpreter = "code_interpreter"
     auto = "auto"
-
-
-class ApiKeys(BaseModel):
-    wolfram_alpha: Optional[str] = None
-    brave: Optional[str] = None
-    bing: Optional[str] = None
-
-
-def load_api_keys_from_env() -> ApiKeys:
-    return ApiKeys(
-        bing=os.getenv("BING_SEARCH_API_KEY"),
-        brave=os.getenv("BRAVE_SEARCH_API_KEY"),
-        wolfram_alpha=os.getenv("WOLFRAM_ALPHA_API_KEY"),
-    )
-
-
-def search_tool_defn(
-    api_keys: ApiKeys, engine="brave"
-) -> AgentConfigToolSearchToolDefinition:
-    if not api_keys.brave and not api_keys.bing:
-        raise ValueError("You must specify either Brave or Bing search API key")
-
-    if engine == "brave":
-        api_key = api_keys.brave
-    elif engine == "bing":
-        api_key = api_keys.bing
-    else:
-        raise ValueError(
-            f"Unknown search engine {engine}. Supported are brave and bing"
-        )
-
-    return AgentConfigToolSearchToolDefinition(
-        type="brave_search", engine=engine, api_key=api_key
-    )
-
-
-def default_builtins(api_keys: ApiKeys) -> List[ToolDefinition]:
-    return [
-        search_tool_defn(api_keys),
-        AgentConfigToolWolframAlphaToolDefinition(
-            type="wolfram_alpha", api_key=api_keys.wolfram_alpha
-        ),
-        AgentConfigToolPhotogenToolDefinition(type="photogen"),
-        AgentConfigToolCodeInterpreterToolDefinition(type="code_interpreter"),
-    ]
 
 
 class QuickToolConfig(BaseModel):
