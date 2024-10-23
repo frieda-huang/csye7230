@@ -20,6 +20,9 @@ from watchdog.events import (
 from watchdog.observers import Observer
 
 
+FileChangeEventList = List["FileChangeEvent"]
+
+
 class FileChangeType(Enum):
     MOVED = "moved"
     MODIFIED = "modified"
@@ -36,7 +39,7 @@ class FileChangeEvent:
 
 
 class Watcher:
-    def __init__(self, path, event_list: List[FileChangeEvent]) -> None:
+    def __init__(self, path, event_list: FileChangeEventList) -> None:
         self.observer = Observer()
         self.path = path
         self.event_list = event_list
@@ -48,7 +51,7 @@ class Watcher:
 
 
 class EventHandler(FileSystemEventHandler):
-    def __init__(self, event_list: List[FileChangeEvent], path: str):
+    def __init__(self, event_list: FileChangeEventList, path: str):
         self.event_list = event_list
         self.last_modified = datetime.now()
         self.allowed_extensions = FileSystemManager(dir=path).file_extension
