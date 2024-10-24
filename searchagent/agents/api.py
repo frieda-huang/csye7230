@@ -1,111 +1,59 @@
-from typing import Callable, List, Union
+from functools import partial
 
-from pydantic import BaseModel
-from searchagent.agents.common.client_utils import (
-    QuickToolConfig,
-    make_agent_config_with_custom_tools,
-)
+from searchagent.agents.factory import AgentFactory
 from searchagent.agents.tools.file_monitor import FileMonitor
 from searchagent.agents.tools.pdf_search import PDFSearchTool
 
 # TODO: Dynamically get directory path
-input_dir = ""
+input_dir = "."
 
 
-AgentFunction = Callable[[], Union[str, "Agent", dict]]
+def transfer_back_to_triage(factory: AgentFactory):
+    return factory.get_agent("TriageAgent")
 
 
-# ========== Handleoff functions ==========
+def transfer_to_file_retrieval(factory: AgentFactory):
+    return factory.get_agent("FileRetrievalAgent")
 
 
-def transfer_back_to_triage():
-    return triage_agent
+def transfer_to_sync(factory: AgentFactory):
+    return factory.get_agent("SyncAgent")
 
 
-def transfer_to_file_retrieval():
-    return file_retrieval_agent
+def transfer_to_index(factory: AgentFactory):
+    return factory.get_agent("IndexAgent")
 
 
-def transfer_to_sync():
-    return sync_agent
+def transfer_to_embed(factory: AgentFactory):
+    return factory.get_agent("EmbedAgent")
 
 
-def transfer_to_index():
-    return index_agent
+async def create_agents(factory: AgentFactory):
+    """TriageAgent routes incoming queries to the appropriate specialized agents or tools"""
+    await factory.create_and_register_agent(
+        name="TriageAgent", functions=[partial(transfer_to_file_retrieval, factory)]
+    )
 
+    """Query Vector DB, i.e. pgvector"""
+    await factory.create_and_register_agent(
+        name="FileRetrievalAgent",
+        functions=[transfer_back_to_triage],
+        custom_tools=[PDFSearchTool(input_dir=input_dir)],
+    )
 
-def transfer_to_embed():
-    return embed_agent
+    """Monitor file system changes and manage sync between local and db"""
+    await factory.create_and_register_agent(
+        name="SyncAgent",
+        functions=[transfer_back_to_triage, transfer_to_index, transfer_to_embed],
+        custom_tools=[FileMonitor()],
+    )
 
+    """Handle indexing of the new or updated files using HNSW"""
+    await factory.create_and_register_agent(
+        name="IndexAgent", functions=[transfer_back_to_triage]
+    )
 
-# ========== Handleoff functions ==========
-
-
-class Agent(BaseModel):
-    name: str
-    agent_config: QuickToolConfig
-    functions: List[AgentFunction] = []
-
-
-"""
-TriageAgent serves as the central decision-maker
-within the multi-agent orchestration system.
-Its primary role is to analyze and route incoming tasks
-or queries to the appropriate specialized agents or tools
-based on the interpreted intent and extracted parameters.
-"""
-triage_agent = Agent(
-    name="TriageAgent",
-    agent_config=make_agent_config_with_custom_tools(
-        tool_config=QuickToolConfig(tool_definitions=[], custom_tools=[]),
-    ),
-    functions=[transfer_to_file_retrieval],
-)
-
-"""Query Vector DB, i.e. pgvector"""
-file_retrieval_agent = Agent(
-    name="FileRetrievalAgent",
-    agent_config=make_agent_config_with_custom_tools(
-        tool_config=QuickToolConfig(
-            tool_definitions=[], custom_tools=[PDFSearchTool(input_dir=input_dir)]
-        ),
-    ),
-    functions=[transfer_back_to_triage],
-)
-
-"""Monitor file system changes and manage sync between local and db"""
-sync_agent = Agent(
-    name="SyncAgent",
-    agent_config=make_agent_config_with_custom_tools(
-        tool_config=QuickToolConfig(
-            tool_definitions=[],
-            custom_tools=[FileMonitor()],
-            prompt_format="function_tag",
-        ),
-    ),
-    functions=[transfer_back_to_triage, transfer_to_index, transfer_to_embed],
-)
-
-
-"""Handle indexing of the new or updated files using HNSW"""
-index_agent = Agent(
-    name="IndexAgent",
-    agent_config=make_agent_config_with_custom_tools(
-        tool_config=QuickToolConfig(
-            tool_definitions=[], custom_tools=[], prompt_format="function_tag"
-        ),
-    ),
-    functions=[transfer_back_to_triage],
-)
-
-
-"""Generate embeddings for new or updated files using ColPali"""
-embed_agent = Agent(
-    name="EmbedAgent",
-    agent_config=make_agent_config_with_custom_tools(
-        tool_config=QuickToolConfig(
-            tool_definitions=[], custom_tools=[], prompt_format="function_tag"
-        ),
-    ),
-    functions=[transfer_back_to_triage],
-)
+    """Generate embeddings for new or updated files using ColPali"""
+    await factory.create_and_register_agent(
+        name="EmbedAgent", functions=[transfer_back_to_triage]
+    )

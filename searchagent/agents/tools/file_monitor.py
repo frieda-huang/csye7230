@@ -8,8 +8,9 @@ from searchagent.sync_manager.base import monitor
 
 
 class FileMonitor(SingleMessageCustomTool):
-    def __init__(self) -> None:
-        self.monitor = monitor()
+    def __init__(self, input_dir=".") -> None:
+        self.input_dir = input_dir
+        self.monitor = monitor(input_dir)
 
     def get_name(self) -> str:
         return "file_monitor"
@@ -21,4 +22,4 @@ class FileMonitor(SingleMessageCustomTool):
         return NotImplementedError
 
     async def run_impl(self):
-        return monitor()
+        return monitor(self.input_dir)
