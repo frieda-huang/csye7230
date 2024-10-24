@@ -7,11 +7,15 @@
 
 from typing import AsyncGenerator, List, Optional, Union
 
-from .custom_tools import CustomTool, Message, ToolResponseMessage
-
-from llama_stack_client.types import UserMessage, Attachment
 from llama_stack_client import LlamaStackClient
+from llama_stack_client.types import Attachment, UserMessage
 from llama_stack_client.types.agent_create_params import AgentConfig
+from searchagent.agents.common.custom_tools import (
+    CustomTool,
+    Message,
+    ToolResponseMessage,
+)
+from searchagent.agents.common.types import AgentFunction
 
 
 class AgentWithCustomToolExecutor:
@@ -32,6 +36,7 @@ class AgentWithCustomToolExecutor:
     async def execute_turn(
         self,
         messages: List[Union[UserMessage, ToolResponseMessage]],
+        functions: List[AgentFunction],
         attachments: Optional[List[Attachment]] = None,
         max_iters: int = 5,
         stream: bool = True,
@@ -65,6 +70,9 @@ class AgentWithCustomToolExecutor:
             if message.stop_reason == "out_of_tokens":
                 yield chunk
                 return
+
+            # TODO: Transfer to another agent
+            print(functions)
 
             tool_call = message.tool_calls[0]
             if tool_call.tool_name not in tools_dict:
