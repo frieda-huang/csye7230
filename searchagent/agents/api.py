@@ -1,7 +1,6 @@
 from enum import Enum
-from functools import partial
 
-from searchagent.agents.factory import AgentFactory
+from searchagent.agents.common.factory import AgentFactory
 from searchagent.agents.tools.embed import Embed
 from searchagent.agents.tools.file_monitor import FileMonitor
 from searchagent.agents.tools.index import Index
@@ -22,60 +21,60 @@ class Agent(Enum):
         return self.value
 
 
-def transfer_back_to_triage(factory: AgentFactory):
-    return factory.get_agent(Agent.TRIAGE)
+class AgentManager:
+    def __init__(self, factory: AgentFactory):
+        self.factory = factory
 
+    def transfer_back_to_triage(self):
+        return self.factory.get_agent(Agent.TRIAGE)
 
-def transfer_to_file_retrieval(factory: AgentFactory):
-    return factory.get_agent(Agent.RETRIEVAL)
+    def transfer_to_file_retrieval(self):
+        return self.factory.get_agent(Agent.RETRIEVAL)
 
+    def transfer_to_sync(self):
+        return self.factory.get_agent(Agent.SYNC)
 
-def transfer_to_sync(factory: AgentFactory):
-    return factory.get_agent(Agent.SYNC)
+    def transfer_to_index(self):
+        return self.factory.get_agent(Agent.INDEX)
 
+    def transfer_to_embed(self):
+        return self.factory.get_agent(Agent.EMBED)
 
-def transfer_to_index(factory: AgentFactory):
-    return factory.get_agent(Agent.INDEX)
+    async def create_agents(self):
+        """TriageAgent routes incoming queries to the appropriate specialized agents or tools"""
+        await self.factory.create_and_register_agent(
+            name=Agent.TRIAGE,
+            functions=[self.transfer_to_file_retrieval],
+        )
 
+        """Query Vector DB, i.e. pgvector"""
+        await self.factory.create_and_register_agent(
+            name=Agent.RETRIEVAL,
+            functions=[self.transfer_back_to_triage],
+            custom_tools=[PDFSearchTool(input_dir=input_dir)],
+        )
 
-def transfer_to_embed(factory: AgentFactory):
-    return factory.get_agent(Agent.EMBED)
+        """Monitor file system changes and manage sync between local and db"""
+        await self.factory.create_and_register_agent(
+            name=Agent.SYNC,
+            functions=[
+                self.transfer_back_to_triage,
+                self.transfer_to_index,
+                self.transfer_to_embed,
+            ],
+            custom_tools=[FileMonitor()],
+        )
 
+        """Handle indexing of the new or updated files using HNSW"""
+        await self.factory.create_and_register_agent(
+            name=Agent.INDEX,
+            functions=[self.transfer_back_to_triage],
+            custom_tools=[Index()],
+        )
 
-async def create_agents(factory: AgentFactory):
-    """TriageAgent routes incoming queries to the appropriate specialized agents or tools"""
-    await factory.create_and_register_agent(
-        name=Agent.TRIAGE, functions=[partial(transfer_to_file_retrieval, factory)]
-    )
-
-    """Query Vector DB, i.e. pgvector"""
-    await factory.create_and_register_agent(
-        name=Agent.RETRIEVAL,
-        functions=[partial(transfer_back_to_triage, factory)],
-        custom_tools=[PDFSearchTool(input_dir=input_dir)],
-    )
-
-    """Monitor file system changes and manage sync between local and db"""
-    await factory.create_and_register_agent(
-        name=Agent.SYNC,
-        functions=[
-            partial(transfer_back_to_triage, factory),
-            partial(transfer_to_index, factory),
-            partial(transfer_to_embed, factory),
-        ],
-        custom_tools=[FileMonitor()],
-    )
-
-    """Handle indexing of the new or updated files using HNSW"""
-    await factory.create_and_register_agent(
-        name=Agent.INDEX,
-        functions=[partial(transfer_back_to_triage, factory)],
-        custom_tools=[Index()],
-    )
-
-    """Generate embeddings for new or updated files using ColPali"""
-    await factory.create_and_register_agent(
-        name=Agent.EMBED,
-        functions=[partial(transfer_back_to_triage, factory)],
-        custom_tools=[Embed()],
-    )
+        """Generate embeddings for new or updated files using ColPali"""
+        await self.factory.create_and_register_agent(
+            name=Agent.EMBED,
+            functions=[self.transfer_back_to_triage],
+            custom_tools=[Embed()],
+        )
