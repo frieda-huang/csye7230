@@ -1,7 +1,9 @@
 from functools import partial
 
 from searchagent.agents.factory import AgentFactory
+from searchagent.agents.tools.embed import Embed
 from searchagent.agents.tools.file_monitor import FileMonitor
+from searchagent.agents.tools.index import Index
 from searchagent.agents.tools.pdf_search import PDFSearchTool
 
 # TODO: Dynamically get directory path
@@ -37,23 +39,31 @@ async def create_agents(factory: AgentFactory):
     """Query Vector DB, i.e. pgvector"""
     await factory.create_and_register_agent(
         name="FileRetrievalAgent",
-        functions=[transfer_back_to_triage],
+        functions=[partial(transfer_back_to_triage, factory)],
         custom_tools=[PDFSearchTool(input_dir=input_dir)],
     )
 
     """Monitor file system changes and manage sync between local and db"""
     await factory.create_and_register_agent(
         name="SyncAgent",
-        functions=[transfer_back_to_triage, transfer_to_index, transfer_to_embed],
+        functions=[
+            partial(transfer_back_to_triage, factory),
+            partial(transfer_to_index, factory),
+            partial(transfer_to_embed, factory),
+        ],
         custom_tools=[FileMonitor()],
     )
 
     """Handle indexing of the new or updated files using HNSW"""
     await factory.create_and_register_agent(
-        name="IndexAgent", functions=[transfer_back_to_triage]
+        name="IndexAgent",
+        functions=[partial(transfer_back_to_triage, factory)],
+        custom_tools=[Index()],
     )
 
     """Generate embeddings for new or updated files using ColPali"""
     await factory.create_and_register_agent(
-        name="EmbedAgent", functions=[transfer_back_to_triage]
+        name="EmbedAgent",
+        functions=[partial(transfer_back_to_triage, factory)],
+        custom_tools=[Embed()],
     )
