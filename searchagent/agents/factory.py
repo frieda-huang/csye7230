@@ -2,6 +2,7 @@ from typing import Callable, List, Optional, Union
 
 from pydantic import BaseModel
 from searchagent.agents.common.client_utils import (
+    AgentConfig,
     CustomTool,
     QuickToolConfig,
     make_agent_config_with_custom_tools,
@@ -12,7 +13,7 @@ AgentFunction = Callable[[], Union[str, "Agent", dict]]
 
 class Agent(BaseModel):
     name: str
-    agent_config: QuickToolConfig
+    agent_config: AgentConfig
     custom_tools: List[CustomTool]
     functions: List[AgentFunction] = []
 

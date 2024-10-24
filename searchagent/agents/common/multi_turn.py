@@ -34,7 +34,7 @@ async def execute_turns(
     custom_tools: List[CustomTool],
     turn_inputs: List[UserTurnInput],
     host: str = "localhost",
-    port: int = 5000,
+    port: int = 11434,
 ):
     agent = await get_agent_with_custom_tools(
         host=host,
