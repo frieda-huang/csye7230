@@ -121,13 +121,21 @@ async def make_agent_config_with_custom_tools(
     agent_config = AgentConfig(
         model=model,
         instructions="You are a helpful assistant",
-        sampling_params=SamplingParams(strategy="greedy", temperature=1.0, top_p=0.9),
+        sampling_params=SamplingParams(
+            strategy="greedy",
+            temperature=1.0,
+            top_p=0.9,
+            repetition_penalty=1,
+            max_tokens=500,
+            top_k=1,
+        ).model_dump(),
         tools=tool_config.tool_definitions.copy(),
         tool_choice=tool_choice,
         tool_prompt_format=tool_config.prompt_format,
         input_shields=input_shields,
         output_shields=output_shields,
         enable_session_persistence=False,
+        max_infer_iters=5,
     )
     return agent_config
 
