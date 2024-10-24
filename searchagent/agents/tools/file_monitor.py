@@ -4,13 +4,13 @@ from llama_stack_client.types.tool_param_definition_param import (
     ToolParamDefinitionParam,
 )
 from searchagent.agents.common.custom_tools import SingleMessageCustomTool
-from searchagent.sync_manager.base import monitor
+from searchagent.sync_manager.base import Monitor
 
 
 class FileMonitor(SingleMessageCustomTool):
     def __init__(self, input_dir=".") -> None:
         self.input_dir = input_dir
-        self.monitor = monitor(input_dir)
+        self.monitor = Monitor(input_dir)
 
     def get_name(self) -> str:
         return "file_monitor"
@@ -22,4 +22,4 @@ class FileMonitor(SingleMessageCustomTool):
         return NotImplementedError
 
     async def run_impl(self):
-        return monitor(self.input_dir)
+        return await self.monitor.run()
