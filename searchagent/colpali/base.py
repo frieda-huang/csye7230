@@ -394,7 +394,7 @@ class ColPaliRag:
 
         self.upsert_query_embeddings(query, query_embeddings)
         ss = SearchStrategyFactory.create_search_strategy("ANNHNSWHamming")
-        ss.search(query_embeddings, top_k)
+        return ss.search(query_embeddings, top_k)
 
     def retrieve_from_local_storage(
         self, filepath: str, qs: List[torch.Tensor], top_k: int
