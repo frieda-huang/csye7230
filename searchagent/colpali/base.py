@@ -28,6 +28,7 @@ from sqlalchemy import select
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import BatchFeature, PreTrainedModel
+from searchagent.colpali.search_engine.context import Context
 
 
 class ColPaliRag:
@@ -393,8 +394,8 @@ class ColPaliRag:
             self.embed_images()
 
         self.upsert_query_embeddings(query, query_embeddings)
-        ss = SearchStrategyFactory.create_search_strategy("ANNHNSWHamming")
-        return ss.search(query_embeddings, top_k)
+        ctx = Context(SearchStrategyFactory.create_search_strategy("ANNHNSWHamming"))
+        ctx.execute_strategy(query_embeddings, top_k)
 
     def retrieve_from_local_storage(
         self, filepath: str, qs: List[torch.Tensor], top_k: int
