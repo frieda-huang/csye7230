@@ -15,7 +15,6 @@ from searchagent.agents.common.custom_tools import (
     Message,
     ToolResponseMessage,
 )
-from searchagent.agents.common.types import AgentFunction
 
 
 class AgentWithCustomToolExecutor:
@@ -36,7 +35,6 @@ class AgentWithCustomToolExecutor:
     async def execute_turn(
         self,
         messages: List[Union[UserMessage, ToolResponseMessage]],
-        functions: List[AgentFunction],
         attachments: Optional[List[Attachment]] = None,
         max_iters: int = 5,
         stream: bool = True,
@@ -70,9 +68,6 @@ class AgentWithCustomToolExecutor:
             if message.stop_reason == "out_of_tokens":
                 yield chunk
                 return
-
-            # TODO: Transfer to another agent
-            print(functions)
 
             tool_call = message.tool_calls[0]
             if tool_call.tool_name not in tools_dict:

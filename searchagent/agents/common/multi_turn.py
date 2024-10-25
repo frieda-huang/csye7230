@@ -16,7 +16,6 @@ from searchagent.agents.common.client_utils import (
     get_agent_with_custom_tools,
 )
 from searchagent.agents.common.execute_with_custom_tools import Attachment, UserMessage
-from searchagent.agents.common.types import AgentFunction
 from termcolor import cprint
 
 
@@ -36,7 +35,6 @@ def prompt_to_turn(
 async def execute_turns(
     agent_config: AgentConfig,
     custom_tools: List[CustomTool],
-    functions: List[AgentFunction],
     turn_inputs: List[UserTurnInput],
     host: str = "localhost",
     port: int = 11434,
@@ -53,7 +51,6 @@ async def execute_turns(
         iterator = agent.execute_turn(
             [turn.message],
             turn.attachments,
-            functions,
         )
         cprint(f"User> {turn.message.content}", color="white", attrs=["bold"])
         async for log in EventLogger().log(iterator):

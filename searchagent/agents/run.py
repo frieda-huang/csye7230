@@ -18,7 +18,6 @@ async def run_main():
     await execute_turns(
         agent_config=triage_agent.agent_config,
         custom_tools=triage_agent.custom_tools,
-        functions=triage_agent.functions,
         turn_inputs=[prompt_to_turn(content="Find me a paper on colpali")],
     )
 
