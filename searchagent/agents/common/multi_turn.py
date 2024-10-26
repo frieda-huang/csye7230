@@ -10,11 +10,7 @@ from typing import List, Optional
 
 from llama_stack_client.lib.agents.event_logger import EventLogger
 from pydantic import BaseModel
-from searchagent.agents.common.client_utils import (
-    AgentConfig,
-    CustomTool,
-    get_agent_with_custom_tools,
-)
+from searchagent.agents.common.client_utils import AgentWithCustomToolExecutor
 from searchagent.agents.common.execute_with_custom_tools import Attachment, UserMessage
 from termcolor import cprint
 
@@ -33,18 +29,9 @@ def prompt_to_turn(
 
 
 async def execute_turns(
-    agent_config: AgentConfig,
-    custom_tools: List[CustomTool],
+    agent: AgentWithCustomToolExecutor,
     turn_inputs: List[UserTurnInput],
-    host: str = "localhost",
-    port: int = 11434,
 ):
-    agent = await get_agent_with_custom_tools(
-        host=host,
-        port=port,
-        agent_config=agent_config,
-        custom_tools=custom_tools,
-    )
     while len(turn_inputs) > 0:
         turn = turn_inputs.pop(0)
 

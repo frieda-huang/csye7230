@@ -44,20 +44,20 @@ class AgentManager:
         """TriageAgent routes incoming queries to the appropriate specialized agents or tools"""
         await self.factory.create_and_register_agent(
             name=Agent.TRIAGE,
-            functions=[self.transfer_to_file_retrieval],
+            handoff_funcs=[self.transfer_to_file_retrieval],
         )
 
         """Query Vector DB, i.e. pgvector"""
         await self.factory.create_and_register_agent(
             name=Agent.RETRIEVAL,
-            functions=[self.transfer_back_to_triage],
+            handoff_funcs=[self.transfer_back_to_triage],
             custom_tools=[PDFSearchTool(input_dir=input_dir)],
         )
 
         """Monitor file system changes and manage sync between local and db"""
         await self.factory.create_and_register_agent(
             name=Agent.SYNC,
-            functions=[
+            handoff_funcs=[
                 self.transfer_back_to_triage,
                 self.transfer_to_index,
                 self.transfer_to_embed,
@@ -68,13 +68,13 @@ class AgentManager:
         """Handle indexing of the new or updated files using HNSW"""
         await self.factory.create_and_register_agent(
             name=Agent.INDEX,
-            functions=[self.transfer_back_to_triage],
+            handoff_funcs=[self.transfer_back_to_triage],
             custom_tools=[Index()],
         )
 
         """Generate embeddings for new or updated files using ColPali"""
         await self.factory.create_and_register_agent(
             name=Agent.EMBED,
-            functions=[self.transfer_back_to_triage],
+            handoff_funcs=[self.transfer_back_to_triage],
             custom_tools=[Embed()],
         )

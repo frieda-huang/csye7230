@@ -16,12 +16,12 @@ from llama_stack_client.types.agent_create_params import (
     AgentConfigToolPhotogenToolDefinition,
 )
 from pydantic import BaseModel, Field
-from termcolor import cprint
-
 from searchagent.agents.common.custom_tools import CustomTool
 from searchagent.agents.common.execute_with_custom_tools import (
     AgentWithCustomToolExecutor,
 )
+from searchagent.agents.common.types import AgentFunction
+from termcolor import cprint
 
 ToolDefinition = Union[
     AgentConfigToolMemoryToolDefinition,
@@ -143,15 +143,12 @@ async def make_agent_config_with_custom_tools(
 
 
 async def get_agent_with_custom_tools(
-    host: str,
-    port: int,
+    name: str,
+    client: LlamaStackClient,
     agent_config: AgentConfig,
+    handoff_funcs: List[AgentFunction],
     custom_tools: List[CustomTool],
 ):
-    client = LlamaStackClient(
-        base_url=f"http://{host}:{port}",
-    )
-
     create_response = client.agents.create(
         agent_config=agent_config,
     )
@@ -166,5 +163,5 @@ async def get_agent_with_custom_tools(
     session_id = session_response.session_id
 
     return AgentWithCustomToolExecutor(
-        client, agent_id, session_id, agent_config, custom_tools
+        name, client, agent_id, session_id, agent_config, handoff_funcs, custom_tools
     )

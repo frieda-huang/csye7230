@@ -15,21 +15,26 @@ from searchagent.agents.common.custom_tools import (
     Message,
     ToolResponseMessage,
 )
+from searchagent.agents.common.types import AgentFunction
 
 
 class AgentWithCustomToolExecutor:
     def __init__(
         self,
+        name: str,
         client: LlamaStackClient,
         agent_id: str,
         session_id: str,
         agent_config: AgentConfig,
+        handoff_funcs: List[AgentFunction],
         custom_tools: List[CustomTool],
     ):
+        self.name = (name,)
         self.client = client
         self.agent_id = agent_id
         self.session_id = session_id
         self.agent_config = agent_config
+        self.handoff_funcs = handoff_funcs
         self.custom_tools = custom_tools
 
     async def execute_turn(
