@@ -151,6 +151,7 @@ This PDF presents the benchmarking report for CSYE7230, evaluating the performan
 
 ## Links to Docs
 - [Project Proposal Part A](https://docs.google.com/document/d/1ojm1jtU8u-KRpF2hjG2bRb_PP1dPwSrfAUV27Sl0KeQ/edit?usp=sharing)
+- [Project Proposal Part B](https://docs.google.com/document/d/1-DSOruZCWS8Qez2NkEPJyNLbkWkpuJq9jCWl9D10ed8/edit?usp=sharing)
 - [UML diagrams](https://drive.google.com/file/d/1AIpMmYtItZ8XGqRUUux1majA1Ue5sLSE/view?usp=sharing)
 - [Figma Design](https://www.figma.com/design/H2o8kObQSkwgRQtMvehywK/CSYE7230?node-id=0-1&t=HTzYXd49McEctP41-1)
 ## Resources
