@@ -1,20 +1,14 @@
 import asyncio
 
 import fire
-from llama_stack_client import LlamaStackClient
-from searchagent.agents.api import Agent, AgentManager
-from searchagent.agents.common.factory import AgentFactory
+from searchagent.agents.api import AgentType
+from searchagent.agents.app_context import agent_manager, factory
 from searchagent.agents.common.multi_turn import execute_turns, prompt_to_turn
 
 
 async def run_main():
-    client = LlamaStackClient(base_url="http://localhost:11434")
-    factory = AgentFactory(client)
-    agent_manager = AgentManager(factory)
-
     await agent_manager.create_agents()
-
-    triage_agent = factory.get_agent(Agent.TRIAGE)
+    triage_agent = factory.get_agent(AgentType.triage_agent)
 
     await execute_turns(
         triage_agent,

@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Callable, List, Union
 
 from llama_stack_client.types.agent_create_params import AgentConfig
@@ -15,3 +16,14 @@ class Agent(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+
+
+class AgentType(Enum):
+    triage_agent = "triage_agent"
+    file_retrieval_agent = "file_retrieval_agent"
+    sync_agent = "sync_agent"
+    index_agent = "index_agent"
+    embed_agent = "embed_agent"
+
+    def __str__(self):
+        return self.value
