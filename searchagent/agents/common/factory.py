@@ -8,7 +8,6 @@ from searchagent.agents.common.client_utils import (
     get_agent_with_custom_tools,
     make_agent_config_with_custom_tools,
 )
-from searchagent.agents.common.types import Agent
 
 
 class AgentFactory:
@@ -39,5 +38,5 @@ class AgentFactory:
         agent = await self.create_agent(name, custom_tools)
         self._agents[name] = agent
 
-    def get_agent(self, name: str) -> Optional[Agent]:
+    def get_agent(self, name: str) -> Optional[AgentWithCustomToolExecutor]:
         return self._agents.get(name)
