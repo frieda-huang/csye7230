@@ -24,10 +24,10 @@ FileChangeEventList = List["FileChangeEvent"]
 
 
 class FileChangeType(Enum):
-    MOVED = "moved"
-    MODIFIED = "modified"
-    DELETED = "deleted"
-    CREATED = "created"
+    moved = "moved"
+    modified = "modified"
+    deleted = "deleted"
+    created = "created"
 
 
 @dataclass
@@ -73,11 +73,11 @@ class EventHandler(FileSystemEventHandler):
 
     def on_created(self, event: DirCreatedEvent | FileCreatedEvent) -> None:
         if self.file_is_valid(event):
-            self.event_list.append(self.create_event(event, FileChangeType.CREATED))
+            self.event_list.append(self.create_event(event, FileChangeType.created))
 
     def on_deleted(self, event: DirDeletedEvent | FileDeletedEvent) -> None:
         if self.file_is_valid(event):
-            self.event_list.append(self.create_event(event, FileChangeType.DELETED))
+            self.event_list.append(self.create_event(event, FileChangeType.deleted))
 
     def on_modified(self, event: DirModifiedEvent | FileModifiedEvent) -> None:
         if self.file_is_valid(event):
@@ -86,9 +86,9 @@ class EventHandler(FileSystemEventHandler):
             else:
                 self.last_modified = datetime.now()
                 self.event_list.append(
-                    self.create_event(event, FileChangeType.MODIFIED)
+                    self.create_event(event, FileChangeType.modified)
                 )
 
     def on_moved(self, event: DirMovedEvent | FileMovedEvent) -> None:
         if self.file_is_valid(event):
-            self.event_list.append(self.create_event(event, FileChangeType.MOVED))
+            self.event_list.append(self.create_event(event, FileChangeType.moved))
