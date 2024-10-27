@@ -4,7 +4,6 @@ from typing import Dict
 from llama_stack_client.types.tool_param_definition_param import (
     ToolParamDefinitionParam,
 )
-from searchagent.agents.app_context import factory
 from searchagent.agents.common.custom_tools import SingleMessageCustomTool
 from searchagent.agents.common.types import AgentType
 
@@ -20,4 +19,6 @@ class TransferToFileRetrievalAgent(SingleMessageCustomTool):
         return {}
 
     async def run_impl(self):
+        from searchagent.agents.app_context import factory
+
         return asdict(factory.get_agent(AgentType.file_retrieval_agent))
