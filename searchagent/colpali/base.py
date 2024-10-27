@@ -244,17 +244,21 @@ class ColPaliRag:
             ...
         }
         """
-        self.embeddings_by_page_id.update(
-            {
+        chunk_size = 1000
+        for i in range(0, len(embeddings), chunk_size):
+            chunk_embeddings = embeddings[i : i + chunk_size]
+            chunk_metadata = mdata[i : i + chunk_size]
+
+            update_dict = {
                 f'{metadata["page_id"]}_{metadata["pdf_id"]}': {
                     "embedding": embedding.tolist(),
                     "metadata": metadata,
                     "created_at": get_now(),
                     "modified_at": get_now(),
                 }
-                for embedding, metadata in zip(embeddings, mdata)
+                for embedding, metadata in zip(chunk_embeddings, chunk_metadata)
             }
-        )
+            self.embeddings_by_page_id.update(update_dict)
 
     def _store_index_locally(self):
         import os
@@ -395,7 +399,7 @@ class ColPaliRag:
 
         self.upsert_query_embeddings(query, query_embeddings)
         ctx = Context(SearchStrategyFactory.create_search_strategy("ANNHNSWHamming"))
-        ctx.execute_strategy(query_embeddings, top_k)
+        return ctx.execute_strategy(query_embeddings, top_k)
 
     def retrieve_from_local_storage(
         self, filepath: str, qs: List[torch.Tensor], top_k: int

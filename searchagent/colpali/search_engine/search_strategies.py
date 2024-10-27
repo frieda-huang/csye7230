@@ -12,7 +12,7 @@ from searchagent.utils import VectorList
 
 class SearchStrategy(ABC):
     @abstractmethod
-    def search(self, query_embeddings: VectorList, top_k: int):
+    def search(self, query_embeddings: VectorList, top_k: int) -> List[Row]:
         pass
 
 
@@ -108,5 +108,5 @@ class ANNHNSWHammingSearchStrategy(SearchStrategy):
 class ANNIVFFlatEuclideanSearchStrategy(SearchStrategy):
     """Use IVFFlat with l2 distance"""
 
-    def search(self, query_embeddings: VectorList, top_k: int):
+    def search(self, query_embeddings: VectorList, top_k: int) -> List[Row]:
         pass
