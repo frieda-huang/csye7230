@@ -1,15 +1,17 @@
 from pathlib import Path
-from typing import Dict, Union
+from typing import Any, Dict, Union
 
 from llama_stack_client.types.tool_param_definition_param import (
     ToolParamDefinitionParam,
 )
-from searchagent.agents.common.custom_tools import SingleMessageCustomTool
+from searchagent.agents.common.custom_tools import CustomTool, SingleMessageCustomTool
 from searchagent.colpali.base import ColPaliRag
 
 
 class PDFSearchTool(SingleMessageCustomTool):
     def __init__(self, input_dir: Union[Path, str]):
+        super().__init__()
+        self.input_dir = input_dir
         self.colpali = ColPaliRag(input_dir, store_locally=False)
 
     def get_name(self) -> str:
@@ -26,6 +28,14 @@ class PDFSearchTool(SingleMessageCustomTool):
                 required=True,
             )
         }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any], input_dir: str) -> "PDFSearchTool":
+        instance = cls(input_dir=input_dir)
+
+        CustomTool.from_dict(data)
+
+        return instance
 
     async def run_impl(self, query: str):
         return self.colpali.search(query)

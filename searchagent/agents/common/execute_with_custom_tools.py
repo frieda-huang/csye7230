@@ -5,36 +5,46 @@
 # the root directory of this source tree.
 
 
-from dataclasses import dataclass
 from typing import AsyncGenerator, List, Optional, Union
 
-from llama_stack_client import LlamaStackClient
 from llama_stack_client.types import Attachment, UserMessage
 from llama_stack_client.types.agent_create_params import AgentConfig
+from loguru import logger
 from searchagent.agents.common.custom_tools import (
     CustomTool,
     Message,
     ToolResponseMessage,
 )
+from searchagent.agents.tools.routines import PDFSearchTool
 
 
-@dataclass
 class AgentWithCustomToolExecutor:
     def __init__(
         self,
         name: str,
-        client: LlamaStackClient,
         agent_id: str,
         session_id: str,
         agent_config: AgentConfig,
         custom_tools: List[CustomTool],
     ):
         self.name = (name,)
-        self.client = client
         self.agent_id = agent_id
         self.session_id = session_id
         self.agent_config = agent_config
         self.custom_tools = custom_tools
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "agent_id": self.agent_id,
+            "session_id": self.session_id,
+            "agent_config": self.agent_config,
+            "custom_tools": [ct.to_dict() for ct in self.custom_tools],
+        }
+
+    @staticmethod
+    def from_dict(dict: dict):
+        return AgentWithCustomToolExecutor(**dict)
 
     async def execute_turn(
         self,
@@ -43,6 +53,9 @@ class AgentWithCustomToolExecutor:
         max_iters: int = 5,
         stream: bool = True,
     ) -> AsyncGenerator:
+        from searchagent.agents.app_context import client
+        from searchagent.agents.common.client_utils import AgentWithCustomToolExecutor
+
         tools_dict = {t.get_name(): t for t in self.custom_tools}
 
         current_messages = messages.copy()
@@ -50,7 +63,7 @@ class AgentWithCustomToolExecutor:
 
         while n_iter < max_iters:
             n_iter += 1
-            response = self.client.agents.turn.create(
+            response = client.agents.turn.create(
                 agent_id=self.agent_id,
                 session_id=self.session_id,
                 messages=current_messages,
@@ -65,6 +78,25 @@ class AgentWithCustomToolExecutor:
                     turn = chunk.event.payload.turn
 
             message = turn.output_message
+
+            # FIXME: START [Figure out a way to dynamically call the right tools]
+            transfer_to_file_retrieval_agent = message.tool_calls[0]
+
+            tool = tools_dict[transfer_to_file_retrieval_agent.tool_name]
+
+            agent_with_custom_tool = await tool.run_impl()
+
+            custom_tool = AgentWithCustomToolExecutor(
+                **agent_with_custom_tool
+            ).custom_tools[0]
+            # FIXME: END
+
+            if custom_tool["name"] == "pdf_search":
+                result = await PDFSearchTool.from_dict(
+                    custom_tool, input_dir="."
+                ).run_impl("find the page about limitation of colpali")
+                logger.debug(result)
+
             if len(message.tool_calls) == 0:
                 yield chunk
                 return
