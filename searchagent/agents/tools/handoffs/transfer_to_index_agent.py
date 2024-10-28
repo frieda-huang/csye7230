@@ -5,7 +5,7 @@ from llama_stack_client.types.tool_param_definition_param import (
     ToolParamDefinitionParam,
 )
 from searchagent.agents.common.custom_tools import SingleMessageCustomTool
-from searchagent.agents.common.types import AgentType
+from searchagent.agents.common.types import AgentType, custom_tool_handoff_agent_params
 
 
 class TransferToIndexAgent(SingleMessageCustomTool):
@@ -16,9 +16,9 @@ class TransferToIndexAgent(SingleMessageCustomTool):
         return "Call this when embeddings need to be indexed"
 
     def get_params_definition(self) -> Dict[str, ToolParamDefinitionParam]:
-        return {}
+        return custom_tool_handoff_agent_params
 
-    async def run_impl(self):
+    async def run_impl(self, *args, **kwargs):
         from searchagent.agents.app_context import factory
 
         return asdict(factory.get_agent(AgentType.index_agent))
