@@ -7,7 +7,6 @@ import uuid
 from enum import Enum
 from typing import Any, List, Literal, Optional, Union
 
-from llama_stack_client import LlamaStackClient
 from llama_stack_client.types import SamplingParams
 from llama_stack_client.types.agent_create_params import (
     AgentConfig,
@@ -143,10 +142,11 @@ async def make_agent_config_with_custom_tools(
 
 async def get_agent_with_custom_tools(
     name: str,
-    client: LlamaStackClient,
     agent_config: AgentConfig,
     custom_tools: List[CustomTool],
 ):
+    from searchagent.agents.app_context import client
+
     create_response = client.agents.create(
         agent_config=agent_config,
     )
@@ -161,5 +161,5 @@ async def get_agent_with_custom_tools(
     session_id = session_response.session_id
 
     return AgentWithCustomToolExecutor(
-        name, client, agent_id, session_id, agent_config, custom_tools
+        name, agent_id, session_id, agent_config, custom_tools
     )

@@ -1,6 +1,5 @@
 from typing import List, Optional
 
-from llama_stack_client import LlamaStackClient
 from searchagent.agents.common.client_utils import (
     AgentWithCustomToolExecutor,
     CustomTool,
@@ -11,9 +10,8 @@ from searchagent.agents.common.client_utils import (
 
 
 class AgentFactory:
-    def __init__(self, client: LlamaStackClient):
+    def __init__(self):
         self._agents = {}
-        self.client = client
 
     async def create_agent(
         self,
@@ -26,9 +24,7 @@ class AgentFactory:
                 prompt_format="function_tag",
             )
         )
-        return await get_agent_with_custom_tools(
-            name, self.client, agent_config, custom_tools
-        )
+        return await get_agent_with_custom_tools(name, agent_config, custom_tools)
 
     async def create_and_register_agent(
         self,
