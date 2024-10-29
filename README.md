@@ -102,6 +102,39 @@ Instructions on how to set up the project locally. For example:
 7. Enable the pgvector extension
 `CREATE EXTENSION vector;`
 
+### Tune Postgres Server Performance
+1. Find config file with `SHOW config_file`; in mac, it's in `/opt/homebrew/var/postgresql@17/postgresql.conf`
+2. Use [PgTune](https://pgtune.leopard.in.ua/) to set initial values for Postgres server parameters
+
+For example, on my machine (Apple M2 Pro), I have the following initial settings
+
+```
+# DB Version: 17
+# OS Type: mac
+# DB Type: web
+# Total Memory (RAM): 32 GB
+# CPUs num: 12
+# Connections num: 100
+# Data Storage: ssd
+
+max_connections = 100
+shared_buffers = 8GB
+effective_cache_size = 24GB
+maintenance_work_mem = 2GB
+checkpoint_completion_target = 0.9
+wal_buffers = 16MB
+default_statistics_target = 100
+random_page_cost = 1.1
+work_mem = 20971kB
+huge_pages = try
+min_wal_size = 1GB
+max_wal_size = 4GB
+max_worker_processes = 12
+max_parallel_workers_per_gather = 4
+max_parallel_workers = 12
+max_parallel_maintenance_workers = 4
+```
+
 ### Run Database Migration
 1. Create new migration by running `alembic revision --autogenerate -m "YOUR MSG"`
 2. Apply new migration by running `alembic upgrade head`

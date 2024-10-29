@@ -17,6 +17,8 @@ This is a wrapper on [colpali](https://github.com/illuin-tech/colpali/tree/main)
 -   [Best practices for querying vector data for gen AI apps in PostgreSQL](https://www.youtube.com/watch?v=PhIC4JlYg7A)
 -   [HNSW](https://www.pinecone.io/learn/series/faiss/hnsw/)
 -   [Why separating compute from storage is a bad idea for late interaction models](https://x.com/jobergum/status/1846945345646821533)
+-   [Hugging Face Transformer Inference Under 1 Millisecond Latency](https://towardsdatascience.com/hugging-face-transformer-inference-under-1-millisecond-latency-e1be0057a51c)
+-   [Use PgTune to set initial values for Postgres server parameters](https://pgtune.leopard.in.ua/)
 
 ## Relevant GitHub Repos
 
@@ -55,12 +57,12 @@ Updated: 10/20/2024
 
 ## Indexing Methods
 
-| IVFFlat                       | HNSW                                               |
-| ----------------------------- | -------------------------------------------------- |
-| K-means based                 | Graph based                                        |
-| Organize vectors into list    | Organize vectors into "neighborhoods"              |
-| Requires prepopulated data    | Iterative insertions                               |
-| Insert time bounded by #lists | Insertion time increase as data in graph increases |
+| IVFFlat                       | HNSW                                                |
+| ----------------------------- | --------------------------------------------------- |
+| K-means based                 | Graph based                                         |
+| Organize vectors into list    | Organize vectors into "neighborhoods"               |
+| Requires prepopulated data    | Iterative insertions                                |
+| Insert time bounded by #lists | Insertion time increases as data in graph increases |
 
 ## Which search method to choose?
 
@@ -197,6 +199,19 @@ Updated: 10/20/2024
         WHERE x.id NOT IN (1, 2)
         ORDER BY x.dist LIMIT 5;
         ```
+
+### Optimization
+
+Model Loading Optimization
+
+-   [ ] Use model quantization (int8 or fp16) to reduce memory footprint
+-   [ ] Implement model weight sharding for distributed reference
+-   [ ] Use ONNX Runtime or TensorRT for inference optimization
+
+Deployment Architecture
+
+-   [ ] Use Kubernetes with horizontal pod autoscaling, aka. HPA
+-   [ ] Use [Nvidia Triton inference server](https://github.com/triton-inference-server/server) for model serving
 
 ### Conclusion
 
