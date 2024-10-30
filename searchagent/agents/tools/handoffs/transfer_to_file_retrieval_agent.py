@@ -20,4 +20,4 @@ class TransferToFileRetrievalAgent(SingleMessageCustomTool):
     async def run_impl(self, *args, **kwargs):
         from searchagent.agents.app_context import factory
 
-        return factory.get_agent(AgentType.file_retrieval_agent).to_dict()
+        return factory.get_agent(AgentType.file_retrieval_agent).model_dump()

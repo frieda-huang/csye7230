@@ -20,4 +20,4 @@ class TransferBackToTriageAgent(SingleMessageCustomTool):
     async def run_impl(self, *args, **kwargs):
         from searchagent.agents.app_context import factory
 
-        return factory.get_agent(AgentType.triage_agent).to_dict()
+        return factory.get_agent(AgentType.triage_agent).model_dump()

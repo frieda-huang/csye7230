@@ -20,4 +20,4 @@ class TransferToSyncAgent(SingleMessageCustomTool):
     async def run_impl(self, *args, **kwargs):
         from searchagent.agents.app_context import factory
 
-        return factory.get_agent(AgentType.sync_agent).to_dict()
+        return factory.get_agent(AgentType.sync_agent).model_dump()
