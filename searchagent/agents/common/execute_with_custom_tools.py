@@ -96,24 +96,21 @@ class AgentWithCustomToolExecutor:
                 else:
                     tool = tools_dict[tool_call.tool_name]
                     result_messages = await execute_custom_tool(tool, message)
-                    custom_tool = json.loads(result_messages[0].content)
 
-                    if custom_tool["name"] == "pdf_search":
-                        result = await PDFSearchTool.from_dict(
-                            custom_tool, input_dir="."
-                        ).run_impl("find the page about limitation of colpali")
-                        logger.debug(result)
+                    for result_message in result_messages:
+                        custom_tool = json.loads(result_message.content)
 
-                    next_message = result_messages[0]
+                        if custom_tool["name"] == "pdf_search":
+                            result = await PDFSearchTool.from_dict(
+                                custom_tool, input_dir="."
+                            ).run_impl("find the page about limitation of colpali")
+                            logger.debug(result)
 
-                yield next_message
-                current_messages = [next_message]
+                        next_message = result_message
+
+                        yield next_message
+                        current_messages = [next_message]
 
 
 async def execute_custom_tool(tool: CustomTool, message: Message) -> List[Message]:
-    result_messages = await tool.run([message])
-    assert (
-        len(result_messages) == 1
-    ), f"Expected single message, got {len(result_messages)}"
-
-    return result_messages
+    return await tool.run([message])
