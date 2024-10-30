@@ -9,9 +9,10 @@
 from typing import List, Optional
 
 from llama_stack_client.lib.agents.event_logger import EventLogger
+from llama_stack_client.types import Attachment, UserMessage
 from pydantic import BaseModel
-from searchagent.agents.common.client_utils import AgentWithCustomToolExecutor
-from searchagent.agents.common.execute_with_custom_tools import Attachment, UserMessage
+from searchagent.agents.common.execute_with_custom_tools import execute_turn
+from searchagent.agents.common.types import AgentWithCustomToolExecutor
 from termcolor import cprint
 
 
@@ -35,7 +36,8 @@ async def execute_turns(
     while len(turn_inputs) > 0:
         turn = turn_inputs.pop(0)
 
-        iterator = agent.execute_turn(
+        iterator = execute_turn(
+            agent,
             [turn.message],
             turn.attachments,
         )

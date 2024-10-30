@@ -16,9 +16,7 @@ from llama_stack_client.types.agent_create_params import (
 )
 from pydantic import BaseModel, Field
 from searchagent.agents.common.custom_tools import CustomTool
-from searchagent.agents.common.execute_with_custom_tools import (
-    AgentWithCustomToolExecutor,
-)
+from searchagent.agents.common.types import AgentWithCustomToolExecutor
 from termcolor import cprint
 
 ToolDefinition = Union[
@@ -161,5 +159,9 @@ async def get_agent_with_custom_tools(
     session_id = session_response.session_id
 
     return AgentWithCustomToolExecutor(
-        name, agent_id, session_id, agent_config, custom_tools
+        name=name,
+        agent_id=agent_id,
+        session_id=session_id,
+        agent_config=agent_config,
+        custom_tools=custom_tools,
     )

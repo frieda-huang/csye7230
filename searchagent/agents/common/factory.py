@@ -1,14 +1,12 @@
 from typing import List, Optional
 
 from searchagent.agents.common.client_utils import (
-    CustomTool,
     QuickToolConfig,
     get_agent_with_custom_tools,
     make_agent_config_with_custom_tools,
 )
-from searchagent.agents.common.execute_with_custom_tools import (
-    AgentWithCustomToolExecutor,
-)
+from searchagent.agents.common.custom_tools import CustomTool
+from searchagent.agents.common.types import AgentWithCustomToolExecutor
 
 
 class AgentFactory:
