@@ -1,4 +1,3 @@
-from dataclasses import asdict
 from typing import Dict
 
 from llama_stack_client.types.tool_param_definition_param import (
@@ -21,4 +20,4 @@ class TransferToSyncAgent(SingleMessageCustomTool):
     async def run_impl(self, *args, **kwargs):
         from searchagent.agents.app_context import factory
 
-        return asdict(factory.get_agent(AgentType.sync_agent))
+        return factory.get_agent(AgentType.sync_agent).to_dict()
