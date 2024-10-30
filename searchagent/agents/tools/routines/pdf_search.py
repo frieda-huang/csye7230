@@ -4,7 +4,8 @@ from typing import Any, Dict, Union
 from llama_stack_client.types.tool_param_definition_param import (
     ToolParamDefinitionParam,
 )
-from searchagent.agents.common.custom_tools import CustomTool, SingleMessageCustomTool
+from searchagent.agents.common.custom_tools import CustomTool
+from searchagent.agents.common.single_message_custom_tool import SingleMessageCustomTool
 from searchagent.colpali.base import ColPaliRag
 
 

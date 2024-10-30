@@ -1,8 +1,9 @@
 from typing import Dict
+
 from llama_stack_client.types.tool_param_definition_param import (
     ToolParamDefinitionParam,
 )
-from searchagent.agents.common.custom_tools import SingleMessageCustomTool
+from searchagent.agents.common.single_message_custom_tool import SingleMessageCustomTool
 
 
 class Index(SingleMessageCustomTool):

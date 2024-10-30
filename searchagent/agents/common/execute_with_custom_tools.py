@@ -5,6 +5,7 @@
 # the root directory of this source tree.
 
 
+import json
 from typing import AsyncGenerator, List, Optional, Union
 
 from llama_stack_client.types import Attachment, UserMessage
@@ -15,7 +16,6 @@ from searchagent.agents.common.custom_tools import (
     Message,
     ToolResponseMessage,
 )
-from searchagent.agents.tools.routines import PDFSearchTool
 
 
 class AgentWithCustomToolExecutor:
@@ -50,19 +50,16 @@ class AgentWithCustomToolExecutor:
         self,
         messages: List[Union[UserMessage, ToolResponseMessage]],
         attachments: Optional[List[Attachment]] = None,
-        max_iters: int = 5,
         stream: bool = True,
     ) -> AsyncGenerator:
         from searchagent.agents.app_context import client
-        from searchagent.agents.common.client_utils import AgentWithCustomToolExecutor
+        from searchagent.agents.tools.routines import PDFSearchTool
 
         tools_dict = {t.get_name(): t for t in self.custom_tools}
 
         current_messages = messages.copy()
-        n_iter = 0
 
-        while n_iter < max_iters:
-            n_iter += 1
+        while True:
             response = client.agents.turn.create(
                 agent_id=self.agent_id,
                 session_id=self.session_id,
@@ -79,24 +76,6 @@ class AgentWithCustomToolExecutor:
 
             message = turn.output_message
 
-            # FIXME: START [Figure out a way to dynamically call the right tools]
-            transfer_to_file_retrieval_agent = message.tool_calls[0]
-
-            tool = tools_dict[transfer_to_file_retrieval_agent.tool_name]
-
-            agent_with_custom_tool = await tool.run_impl()
-
-            custom_tool = AgentWithCustomToolExecutor(
-                **agent_with_custom_tool
-            ).custom_tools[0]
-            # FIXME: END
-
-            if custom_tool["name"] == "pdf_search":
-                result = await PDFSearchTool.from_dict(
-                    custom_tool, input_dir="."
-                ).run_impl("find the page about limitation of colpali")
-                logger.debug(result)
-
             if len(message.tool_calls) == 0:
                 yield chunk
                 return
@@ -105,22 +84,30 @@ class AgentWithCustomToolExecutor:
                 yield chunk
                 return
 
-            tool_call = message.tool_calls[0]
-            if tool_call.tool_name not in tools_dict:
-                m = ToolResponseMessage(
-                    call_id=tool_call.call_id,
-                    tool_name=tool_call.tool_name,
-                    content=f"Unknown tool `{tool_call.tool_name}` was called. Try again with something else",
-                    role="ipython",
-                )
-                next_message = m
-            else:
-                tool = tools_dict[tool_call.tool_name]
-                result_messages = await execute_custom_tool(tool, message)
-                next_message = result_messages[0]
+            for tool_call in message.tool_calls:
+                if tool_call.tool_name not in tools_dict:
+                    m = ToolResponseMessage(
+                        call_id=tool_call.call_id,
+                        tool_name=tool_call.tool_name,
+                        content=f"Unknown tool `{tool_call.tool_name}` was called. Try again with something else",
+                        role="ipython",
+                    )
+                    next_message = m
+                else:
+                    tool = tools_dict[tool_call.tool_name]
+                    result_messages = await execute_custom_tool(tool, message)
+                    custom_tool = json.loads(result_messages[0].content)
 
-            yield next_message
-            current_messages = [next_message]
+                    if custom_tool["name"] == "pdf_search":
+                        result = await PDFSearchTool.from_dict(
+                            custom_tool, input_dir="."
+                        ).run_impl("find the page about limitation of colpali")
+                        logger.debug(result)
+
+                    next_message = result_messages[0]
+
+                yield next_message
+                current_messages = [next_message]
 
 
 async def execute_custom_tool(tool: CustomTool, message: Message) -> List[Message]:
