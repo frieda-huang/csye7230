@@ -10,9 +10,13 @@ from typing import List, Optional
 
 from llama_stack_client.types import Attachment, ToolResponseMessage, UserMessage
 from pydantic import BaseModel
-from searchagent.agents.common.execute_with_custom_tools import execute_turn
+from searchagent.agents.common.execute_with_custom_tools import (
+    execute_turn,
+    tools_mapping,
+)
 from searchagent.agents.common.types import AgentWithCustomToolExecutor
 from termcolor import cprint
+import json
 
 
 class UserTurnInput(BaseModel):
@@ -43,4 +47,7 @@ async def execute_turns(
         cprint(f"User> {turn.message.content}", color="white", attrs=["bold"])
         async for log in iterator:
             if isinstance(log, ToolResponseMessage):
-                print(log.content)
+                agent_info = json.loads(log.content)
+                name = agent_info["agent"]["name"]
+                agent = tools_mapping[name]
+                print(agent)

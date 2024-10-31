@@ -9,15 +9,32 @@ from pydantic import BaseModel
 from searchagent.agents.common.custom_tools import CustomTool
 
 
-class AgentType(Enum):
+class StrEnum(Enum):
+    def __str__(self) -> str:
+        return self.value
+
+
+class ToolType(StrEnum):
+    pdf_search = "pdf_search"
+    file_monitor = "file_monitor"
+    index = "index"
+    embed = "embed"
+
+
+class AgentType(StrEnum):
     triage_agent = "triage_agent"
     file_retrieval_agent = "file_retrieval_agent"
     sync_agent = "sync_agent"
     index_agent = "index_agent"
     embed_agent = "embed_agent"
 
-    def __str__(self):
-        return self.value
+
+class HandoffAgentType(StrEnum):
+    transfer_to_sync_agent = "transfer_to_sync_agent"
+    transfer_back_to_triage_agent = "transfer_back_to_triage_agent"
+    transfer_to_embed_agent = "transfer_to_embed_agent"
+    transfer_to_index_agent = "transfer_to_index_agent"
+    transfer_to_file_retrieval_agent = "transfer_to_file_retrieval_agent"
 
 
 class AgentWithCustomToolExecutor(BaseModel):

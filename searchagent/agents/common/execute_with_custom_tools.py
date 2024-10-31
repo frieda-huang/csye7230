@@ -11,7 +11,31 @@ from typing import AsyncGenerator, List, Optional, Union
 from llama_stack_client.types import Attachment, ToolResponseMessage, UserMessage
 from searchagent.agents.app_context import client
 from searchagent.agents.common.custom_tools import CustomTool, Message
-from searchagent.agents.common.types import AgentWithCustomToolExecutor
+from searchagent.agents.common.types import (
+    AgentWithCustomToolExecutor,
+    HandoffAgentType,
+    ToolType,
+)
+from searchagent.agents.tools.handoffs import (
+    TransferBackToTriageAgent,
+    TransferToEmbedAgent,
+    TransferToFileRetrievalAgent,
+    TransferToIndexAgent,
+    TransferToSyncAgent,
+)
+from searchagent.agents.tools.routines import Embed, FileMonitor, Index, PDFSearchTool
+
+tools_mapping = {
+    ToolType.pdf_search.value: PDFSearchTool,
+    ToolType.file_monitor.value: FileMonitor,
+    ToolType.embed.value: Embed,
+    ToolType.index.value: Index,
+    HandoffAgentType.transfer_back_to_triage_agent.value: TransferBackToTriageAgent,
+    HandoffAgentType.transfer_to_file_retrieval_agent.value: TransferToFileRetrievalAgent,
+    HandoffAgentType.transfer_to_embed_agent.value: TransferToEmbedAgent,
+    HandoffAgentType.transfer_to_index_agent.value: TransferToIndexAgent,
+    HandoffAgentType.transfer_to_sync_agent.value: TransferToSyncAgent,
+}
 
 
 async def execute_turn(
@@ -70,8 +94,11 @@ async def execute_turn(
 
                 result_message = {
                     "agent": {
-                        "object": current_agent.model_dump(),
+                        "name": current_agent.name,
                         "id": current_agent.agent_id,
+                        "custom_tools": [
+                            tool.get_name() for tool in current_agent.custom_tools
+                        ],
                     },
                     "message": result,
                 }
