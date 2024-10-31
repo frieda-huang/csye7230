@@ -23,16 +23,18 @@ class SingleMessageCustomTool(CustomTool):
         message = messages[0]
 
         tool_call = message.tool_calls[0]
+        tool_name = tool_call.tool_name
 
         try:
             response = await self.run_impl(**tool_call.arguments)
 
             if "agent_id" in response:
-                return AgentWithCustomToolExecutor(**response)
+                response["name"] = tool_name
+                return AgentWithCustomToolExecutor.from_dict(response)
             else:
                 return ToolResponseMessage(
                     call_id=tool_call.call_id,
-                    tool_name=tool_call.tool_name,
+                    tool_name=tool_name,
                     content=response,
                     role="ipython",
                 )

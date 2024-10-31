@@ -1,12 +1,12 @@
 from enum import Enum
-from typing import List, Optional
+from typing import List
 
 from llama_stack_client.types.agent_create_params import AgentConfig
 from llama_stack_client.types.tool_param_definition_param import (
     ToolParamDefinitionParam,
 )
 from pydantic import BaseModel
-from searchagent.agents.common.custom_tools import CustomTool, Message
+from searchagent.agents.common.custom_tools import CustomTool
 
 
 class AgentType(Enum):
@@ -33,22 +33,14 @@ class AgentWithCustomToolExecutor(BaseModel):
     @staticmethod
     def from_dict(data: dict) -> "AgentWithCustomToolExecutor":
         agent_config = AgentConfig(**data["agent_config"])
-        custom_tools = [
-            CustomTool.from_dict(tool) for tool in data.get("custom_tools", [])
-        ]
 
         return AgentWithCustomToolExecutor(
             name=data["name"],
             agent_id=data["agent_id"],
             session_id=data["session_id"],
             agent_config=agent_config,
-            custom_tools=custom_tools,
+            custom_tools=data["custom_tools"],
         )
-
-
-class ResponseMessage(BaseModel):
-    agent: Optional[AgentWithCustomToolExecutor]
-    messages: List[Message]
 
 
 # FIXME: This is a hack to bypass the JSON serialization error in custom tool's get_params_definition()

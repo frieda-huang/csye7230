@@ -8,7 +8,6 @@
 from typing import AsyncGenerator, List, Optional, Union
 
 from llama_stack_client.types import Attachment, ToolResponseMessage, UserMessage
-from loguru import logger
 from searchagent.agents.app_context import client
 from searchagent.agents.common.custom_tools import CustomTool, Message
 from searchagent.agents.common.types import AgentWithCustomToolExecutor
@@ -20,7 +19,7 @@ async def execute_turn(
     attachments: Optional[List[Attachment]] = None,
     stream: bool = True,
 ) -> AsyncGenerator:
-    # from searchagent.agents.app_context import client
+    current_agent = agent
 
     tools_dict = {t.get_name(): t for t in agent.custom_tools}
 
@@ -62,13 +61,18 @@ async def execute_turn(
                 next_message = m
             else:
                 tool = tools_dict[tool_call.tool_name]
-                result_messages = await execute_custom_tool(tool, message)
+                result = await execute_custom_tool(tool, message)
 
-                if type(result_messages) is AgentWithCustomToolExecutor:
-                    current_agent = result_messages
-                    logger.debug(current_agent)
+                if isinstance(result, AgentWithCustomToolExecutor):
+                    current_agent = result
+                    result = f"Transfered to {current_agent.name}. Adopt persona immediately."
 
-                next_message = result_messages[0]
+                next_message = ToolResponseMessage(
+                    call_id=tool_call.call_id,
+                    tool_name=tool_call.tool_name,
+                    content=result,
+                    role="ipython",
+                )
 
             yield next_message
             current_messages = [next_message]
