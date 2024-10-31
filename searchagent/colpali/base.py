@@ -13,22 +13,16 @@ from PIL import Image
 from searchagent.colpali.models import ImageMetadata, StoredImageData
 from searchagent.colpali.pdf_images_dataset import PDFImagesDataset
 from searchagent.colpali.pdf_images_processor import PDFImagesProcessor
+from searchagent.colpali.profiler import profile_colpali
+from searchagent.colpali.search_engine.context import Context
 from searchagent.colpali.search_engine.strategy_factory import SearchStrategyFactory
 from searchagent.db_connection import Session
-from searchagent.models import (
-    Embedding,
-    File,
-    FlattenedEmbedding,
-    Folder,
-    Page,
-    Query,
-)
+from searchagent.models import Embedding, File, FlattenedEmbedding, Folder, Page, Query
 from searchagent.utils import VectorList, get_now
 from sqlalchemy import select
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import BatchFeature, PreTrainedModel
-from searchagent.colpali.search_engine.context import Context
 
 
 class ColPaliRag:
@@ -142,6 +136,10 @@ class ColPaliRag:
             collate_fn=process_fn,
         )
 
+    @profile_colpali(enable_profiling=False)
+    def run_inference(self, batches: dict):
+        return self.model(**batches)
+
     @torch.no_grad()
     def _embed(
         self,
@@ -193,7 +191,7 @@ class ColPaliRag:
                 batches = {k: v.to(self.device) for k, v in batch.items()}
 
             # Move images to GPU and get embeddings
-            batch_embeddings = self.model(**batches)
+            batch_embeddings = self.run_inference(batches)
 
             # Embeddings for a single PDF page; it is of the shape (1030, 128)
             # 32x32=1024 image patches and 6 instruction text tokens
@@ -245,7 +243,8 @@ class ColPaliRag:
         }
         """
         chunk_size = 1000
-        for i in range(0, len(embeddings), chunk_size):
+        embed_len = len(embeddings)
+        for i in range(0, embed_len, chunk_size):
             chunk_embeddings = embeddings[i : i + chunk_size]
             chunk_metadata = mdata[i : i + chunk_size]
 
