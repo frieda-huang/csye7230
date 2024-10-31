@@ -8,8 +8,7 @@
 # This software may be used and distributed in accordance with the terms of the Llama 3 Community License Agreement.
 from typing import List, Optional
 
-from llama_stack_client.lib.agents.event_logger import EventLogger
-from llama_stack_client.types import Attachment, UserMessage
+from llama_stack_client.types import Attachment, ToolResponseMessage, UserMessage
 from pydantic import BaseModel
 from searchagent.agents.common.execute_with_custom_tools import execute_turn
 from searchagent.agents.common.types import AgentWithCustomToolExecutor
@@ -42,6 +41,6 @@ async def execute_turns(
             turn.attachments,
         )
         cprint(f"User> {turn.message.content}", color="white", attrs=["bold"])
-        async for log in EventLogger().log(iterator):
-            if log is not None:
-                log.print()
+        async for log in iterator:
+            if isinstance(log, ToolResponseMessage):
+                print(log.content)

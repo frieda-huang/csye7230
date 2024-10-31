@@ -5,6 +5,7 @@
 # the root directory of this source tree.
 
 
+import json
 from typing import AsyncGenerator, List, Optional, Union
 
 from llama_stack_client.types import Attachment, ToolResponseMessage, UserMessage
@@ -67,10 +68,18 @@ async def execute_turn(
                     current_agent = result
                     result = f"Transfered to {current_agent.name}. Adopt persona immediately."
 
+                result_message = {
+                    "agent": {
+                        "object": current_agent.model_dump(),
+                        "id": current_agent.agent_id,
+                    },
+                    "message": result,
+                }
+
                 next_message = ToolResponseMessage(
                     call_id=tool_call.call_id,
                     tool_name=tool_call.tool_name,
-                    content=result,
+                    content=json.dumps(result_message),
                     role="ipython",
                 )
 
