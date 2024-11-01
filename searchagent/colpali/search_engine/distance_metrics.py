@@ -16,14 +16,14 @@ class DistanceMetric(ABC):
 class HammingDistance(DistanceMetric):
     def calculate(self):
         SQL_DROP_FUNC = """
-        DROP FUNCTION IF EXISTS hamming(vector[]);
+        DROP FUNCTION IF EXISTS hamming(halfvec[]);
         """
         SQL_HAMMING_FUNC = f"""
-        CREATE OR REPLACE FUNCTION hamming(query vector[])
+        CREATE OR REPLACE FUNCTION hamming(query halfvec[])
         RETURNS TABLE (
             embedding_id integer,
-            query vector({VECT_DIM}),
-            vector_embedding vector({VECT_DIM}),
+            query halfvec({VECT_DIM}),
+            vector_embedding halfvec({VECT_DIM}),
             hamming_dist integer
         ) AS $$
             WITH queries AS (
@@ -67,7 +67,7 @@ class MaxSim(DistanceMetric):
         """
 
         SQL_MAXSIM_FUNC = """
-        CREATE OR REPLACE FUNCTION max_sim(document vector[], query vector[])
+        CREATE OR REPLACE FUNCTION max_sim(document halfvec[], query halfvec[])
         RETURNS double precision AS $$
             WITH queries AS (
                 SELECT row_number() OVER () AS query_number, *

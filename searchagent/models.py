@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 import numpy as np
-from pgvector.sqlalchemy import VECTOR
+from pgvector.sqlalchemy import HALFVEC
 from sqlalchemy import ARRAY, ForeignKey, Integer, LargeBinary, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -66,7 +66,7 @@ class Embedding(Base):
     __tablename__ = "embedding"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    vector_embedding: Mapped[list[np.array]] = mapped_column(ARRAY(VECTOR(VECT_DIM)))
+    vector_embedding: Mapped[list[np.array]] = mapped_column(ARRAY(HALFVEC(VECT_DIM)))
     last_modified: Mapped[datetime] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(String, nullable=False)
 
@@ -85,7 +85,7 @@ class FlattenedEmbedding(Base):
     __tablename__ = "flattened_embedding"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    vector_embedding: Mapped[np.array] = mapped_column(VECTOR(VECT_DIM))
+    vector_embedding: Mapped[np.array] = mapped_column(HALFVEC(VECT_DIM))
     last_modified: Mapped[datetime] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(String, nullable=False)
 
@@ -123,7 +123,7 @@ class Query(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str] = mapped_column(String, nullable=False)
-    vector_embedding: Mapped[list[np.array]] = mapped_column(ARRAY(VECTOR(VECT_DIM)))
+    vector_embedding: Mapped[list[np.array]] = mapped_column(ARRAY(HALFVEC(VECT_DIM)))
     created_at: Mapped[datetime] = mapped_column(String, nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
 
