@@ -41,6 +41,7 @@ bcrypt = "^4.2.0"
 ml-dtypes = "^0.5.0"
 llama-stack-client = "^0.0.41"
 watchdog = "^5.0.3"
+fastapi = {extras = ["standard"], version = "^0.115.4"}
 
 
 [tool.poetry.group.dev.dependencies]
