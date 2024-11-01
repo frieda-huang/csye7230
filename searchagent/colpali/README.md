@@ -19,6 +19,8 @@ This is a wrapper on [colpali](https://github.com/illuin-tech/colpali/tree/main)
 -   [Why separating compute from storage is a bad idea for late interaction models](https://x.com/jobergum/status/1846945345646821533)
 -   [Hugging Face Transformer Inference Under 1 Millisecond Latency](https://towardsdatascience.com/hugging-face-transformer-inference-under-1-millisecond-latency-e1be0057a51c)
 -   [Use PgTune to set initial values for Postgres server parameters](https://pgtune.leopard.in.ua/)
+-   [How to Use ANALYZE Command in PostgreSQL](https://www.commandprompt.com/education/how-to-use-analyze-command-in-postgresql/)
+-   [PostgreSQL performance tips](https://www.postgresql.org/docs/current/populate.html#DISABLE-AUTOCOMMIT)
 
 ## Relevant GitHub Repos
 
@@ -206,7 +208,12 @@ Model Loading Optimization
 
 -   [ ] Use model quantization (int8 or fp16) to reduce memory footprint
 -   [ ] Implement model weight sharding for distributed reference
--   [ ] Use ONNX Runtime or TensorRT for inference optimization
+-   [ ] Use ONNX Runtime and TensorRT for inference optimization
+
+Database Optimization
+
+-   [x] Optimizing Vector Storage in PostgreSQL with pgvector's Halfvec
+-   [x] Update the planner statistics to optimize query performance
 
 Deployment Architecture
 
