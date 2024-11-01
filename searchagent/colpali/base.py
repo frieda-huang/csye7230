@@ -18,7 +18,7 @@ from searchagent.colpali.search_engine.context import Context
 from searchagent.colpali.search_engine.strategy_factory import SearchStrategyFactory
 from searchagent.db_connection import Session
 from searchagent.models import Embedding, File, FlattenedEmbedding, Folder, Page, Query
-from searchagent.utils import VectorList, get_now
+from searchagent.utils import VectorList, batch_processing, get_now
 from sqlalchemy import select
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -286,72 +286,86 @@ class ColPaliRag:
 
     def upsert_doc_embeddings(self):
         """Upsert embeddings to PostgreSQL"""
-        # TODO: It's getting a bit crazy, will refactor later
-        # TODO: Do batch processing when adding new folder, file...
 
-        for key, value in self.embeddings_by_page_id.items():
-            parts = key.split("_")
-            page_id = parts[0]
-            embeddings = value["embedding"]
-            vector_embedding = [np.array(e) for e in embeddings]
+        with Session.begin() as session:
 
-            metadata = value["metadata"]
-            filename = metadata["filename"]
-            filepath = metadata["filepath"]
-            total_pages = metadata["total_pages"]
-            folder_name = str(self.input_dir.name)
-            folder_path = str(self.input_dir)
+            def add_embeddings_to_session(batch):
 
-            with Session.begin() as session:
-                # Check if folder already exists
-                if not self.folder_has_embeddings():
-                    folder = Folder(
-                        folder_name=folder_name,
-                        folder_path=folder_path,
-                        created_at=get_now(),
-                        user_id=self.user_id,
-                    )
-                    session.add(folder)
+                for key, value in batch:
+                    parts = key.split("_")
+                    page_id = parts[0]
+                    embeddings = value["embedding"]
+                    vector_embedding = [np.array(e) for e in embeddings]
 
-                # Check if file already exists
-                file_stm = select(File).filter_by(filepath=filepath)
-                file = session.scalar(file_stm)
-                if not file:
-                    file = File(
-                        filename=filename,
-                        filepath=filepath,
-                        filetype="pdf",
-                        total_pages=total_pages,
+                    metadata = value["metadata"]
+                    filename = metadata["filename"]
+                    filepath = metadata["filepath"]
+                    total_pages = metadata["total_pages"]
+                    folder_name = str(self.input_dir.name)
+                    folder_path = str(self.input_dir)
+
+                    # Check if folder already exists
+                    if not self.folder_has_embeddings():
+                        folder = Folder(
+                            folder_name=folder_name,
+                            folder_path=folder_path,
+                            created_at=get_now(),
+                            user_id=self.user_id,
+                        )
+                        session.add(folder)
+
+                    # Check if file already exists
+                    file_stm = select(File).filter_by(filepath=filepath)
+                    file = session.scalar(file_stm)
+                    if not file:
+                        file = File(
+                            filename=filename,
+                            filepath=filepath,
+                            filetype="pdf",
+                            total_pages=total_pages,
+                            last_modified=get_now(),
+                            created_at=get_now(),
+                            folder=folder,
+                        )
+                        session.add(file)
+
+                    page = Page(
+                        page_number=page_id,
                         last_modified=get_now(),
                         created_at=get_now(),
-                        folder=folder,
+                        file=file,
                     )
-                    session.add(file)
+                    session.add(page)
 
-                page = Page(
-                    page_number=page_id,
-                    last_modified=get_now(),
-                    created_at=get_now(),
-                    file=file,
-                )
-                session.add(page)
-
-                embedding = Embedding(
-                    vector_embedding=vector_embedding,
-                    page=page,
-                    last_modified=get_now(),
-                    created_at=get_now(),
-                )
-                session.add(embedding)
-
-                for e in vector_embedding:
-                    flattened_embedding = FlattenedEmbedding(
-                        vector_embedding=e,
+                    embedding = Embedding(
+                        vector_embedding=vector_embedding,
+                        page=page,
                         last_modified=get_now(),
                         created_at=get_now(),
-                        embedding=embedding,
                     )
-                    session.add(flattened_embedding)
+                    session.add(embedding)
+
+                    def add_flattened_embeddings_to_session(batch: List[Any]):
+                        for e in batch:
+                            flattened_embedding = FlattenedEmbedding(
+                                vector_embedding=e,
+                                last_modified=get_now(),
+                                created_at=get_now(),
+                                embedding=embedding,
+                            )
+                            session.add(flattened_embedding)
+
+                    batch_processing(
+                        original_list=vector_embedding,
+                        batch_size=300,
+                        func=add_flattened_embeddings_to_session,
+                    )
+
+            batch_processing(
+                original_list=self.embeddings_by_page_id.items(),
+                batch_size=100,
+                func=add_embeddings_to_session,
+            )
 
     def load_stored_embeddings(self, filepath: str) -> Dict[str, StoredImageData]:
         """Load stored embeddings in memory"""

@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
+from itertools import islice
 from pathlib import Path
 from time import time
-from typing import List, TypeAlias
+from typing import Any, Callable, Iterable, List, TypeAlias
 
 import numpy as np
 from loguru import logger
@@ -40,6 +41,14 @@ def timer(func):
 
 def get_now():
     return datetime.now(timezone.utc).isoformat()
+
+
+def batch_processing(
+    original_list: Iterable[Any], batch_size: int, func: Callable[[List[Any]], None]
+):
+    it = iter(original_list)
+    while batch := list(islice(it, batch_size)):
+        func(batch)
 
 
 project_paths = ProjectPaths()
