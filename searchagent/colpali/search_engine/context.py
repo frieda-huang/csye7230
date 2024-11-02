@@ -17,5 +17,7 @@ class Context:
     def strategy(self, strategy: SearchStrategy):
         self._strategy = strategy
 
-    def execute_strategy(self, query_embeddings: VectorList, top_k: int) -> List[Row]:
-        return self._strategy.search(query_embeddings, top_k)
+    async def execute_strategy(
+        self, query_embeddings: VectorList, top_k: int
+    ) -> List[Row]:
+        return await self._strategy.search(query_embeddings, top_k)

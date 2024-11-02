@@ -43,12 +43,12 @@ def get_now():
     return datetime.now(timezone.utc).isoformat()
 
 
-def batch_processing(
+async def batch_processing(
     original_list: Iterable[Any], batch_size: int, func: Callable[[List[Any]], None]
 ):
     it = iter(original_list)
     while batch := list(islice(it, batch_size)):
-        func(batch)
+        await func(batch)
 
 
 project_paths = ProjectPaths()

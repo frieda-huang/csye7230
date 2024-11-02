@@ -1,8 +1,9 @@
+import asyncio
 import os
 
 import bcrypt
 from dotenv import load_dotenv
-from searchagent.db_connection import Session
+from searchagent.db_connection import async_session
 from searchagent.models import User
 from searchagent.utils import get_now
 
@@ -20,5 +21,10 @@ user_dict = {
 
 new_user = User(**user_dict)
 
-with Session.begin() as session:
-    session.add(new_user)
+
+async def add_new_user():
+    async with async_session.begin() as session:
+        session.add(new_user)
+
+
+asyncio.run(add_new_user())

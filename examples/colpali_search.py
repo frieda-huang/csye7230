@@ -25,5 +25,5 @@ async def root():
 
 @app.post("/search")
 async def search(query: str):
-    response = rag.search(query=query)
+    response = await rag.search(query=query)
     return {"response": response}

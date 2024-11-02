@@ -12,12 +12,12 @@ from searchagent.utils import VectorList
 
 class SearchStrategy(ABC):
     @abstractmethod
-    def search(self, query_embeddings: VectorList, top_k: int) -> List[Row]:
+    async def search(self, query_embeddings: VectorList, top_k: int) -> List[Row]:
         pass
 
 
 class ExactMaxSimSearchStrategy(SearchStrategy):
-    def search(self, query_embeddings: VectorList, top_k: int) -> List[Row]:
+    async def search(self, query_embeddings: VectorList, top_k: int) -> List[Row]:
         max_sim = MaxSim()
         max_sim.calculate()
 
@@ -44,9 +44,11 @@ class ExactMaxSimSearchStrategy(SearchStrategy):
         ORDER BY
             tp.max_sim DESC;
         """
-        with psycopg.connect(dbname=DBNAME, autocommit=True) as conn:
+        async with psycopg.AsyncConnection.connect(
+            dbname=DBNAME, autocommit=True
+        ) as conn:
             register_vector(conn)
-            result = conn.execute(
+            result = await conn.execute(
                 SQL_RETRIEVE_TOP_K_DOCS, (query_embeddings,)
             ).fetchall()
 
@@ -62,7 +64,7 @@ class ANNHNSWHammingSearchStrategy(SearchStrategy):
     Convert the floating point 128-dimensional vectors to 128-bit vectors
     """
 
-    def search(self, query_embeddings: VectorList, top_k: int) -> List[Row]:
+    async def search(self, query_embeddings: VectorList, top_k: int) -> List[Row]:
         hamming = HammingDistance()
         hamming.calculate()
 
@@ -91,11 +93,11 @@ class ANNHNSWHammingSearchStrategy(SearchStrategy):
         JOIN
             file f ON f.id = p.file_id
         """
-        with psycopg.connect(
+        async with psycopg.AsyncConnection.connect(
             dbname=DBNAME, autocommit=True, row_factory=dict_row
         ) as conn:
             register_vector(conn)
-            result = conn.execute(SQL_RERANK, (query_embeddings,)).fetchall()
+            result = await conn.execute(SQL_RERANK, (query_embeddings,)).fetchall()
 
             for row in result:
                 print(
@@ -108,5 +110,5 @@ class ANNHNSWHammingSearchStrategy(SearchStrategy):
 class ANNIVFFlatEuclideanSearchStrategy(SearchStrategy):
     """Use IVFFlat with l2 distance"""
 
-    def search(self, query_embeddings: VectorList, top_k: int) -> List[Row]:
+    async def search(self, query_embeddings: VectorList, top_k: int) -> List[Row]:
         pass
