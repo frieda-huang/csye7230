@@ -16,7 +16,7 @@ from searchagent.colpali.pdf_images_processor import PDFImagesProcessor
 from searchagent.colpali.profiler import profile_colpali
 from searchagent.colpali.search_engine.context import Context
 from searchagent.colpali.search_engine.strategy_factory import SearchStrategyFactory
-from searchagent.db_connection import async_session, inspector
+from searchagent.db_connection import async_session, get_table_names
 from searchagent.models import Embedding, File, FlattenedEmbedding, Folder, Page, Query
 from searchagent.utils import VectorList, batch_processing, get_now
 from sqlalchemy import select, text
@@ -369,7 +369,7 @@ class ColPaliRag:
             )
 
             # Update the planner statistics to optimize query performance
-            table_names = inspector.get_table_names()
+            table_names = await get_table_names()
             for table_name in table_names:
                 if table_name == "user":
                     continue
