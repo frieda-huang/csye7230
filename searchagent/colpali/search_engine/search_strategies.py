@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 import psycopg
-from pgvector.psycopg import register_vector
+from pgvector.psycopg import register_vector_async
 from psycopg.cursor import Row
 from psycopg.rows import dict_row
 from searchagent.colpali.search_engine.distance_metrics import HammingDistance, MaxSim
@@ -47,10 +47,9 @@ class ExactMaxSimSearchStrategy(SearchStrategy):
         async with psycopg.AsyncConnection.connect(
             dbname=DBNAME, autocommit=True
         ) as conn:
-            register_vector(conn)
-            result = await conn.execute(
-                SQL_RETRIEVE_TOP_K_DOCS, (query_embeddings,)
-            ).fetchall()
+            await register_vector_async(conn)
+            r = await conn.execute(SQL_RETRIEVE_TOP_K_DOCS, (query_embeddings,))
+            result = await r.fetchall()
 
             for row in result:
                 print(row)
@@ -93,11 +92,13 @@ class ANNHNSWHammingSearchStrategy(SearchStrategy):
         JOIN
             file f ON f.id = p.file_id
         """
-        async with psycopg.AsyncConnection.connect(
+        conn = await psycopg.AsyncConnection.connect(
             dbname=DBNAME, autocommit=True, row_factory=dict_row
-        ) as conn:
-            register_vector(conn)
-            result = await conn.execute(SQL_RERANK, (query_embeddings,)).fetchall()
+        )
+        async with conn:
+            await register_vector_async(conn)
+            r = await conn.execute(SQL_RERANK, (query_embeddings,))
+            result = await r.fetchall()
 
             for row in result:
                 print(
