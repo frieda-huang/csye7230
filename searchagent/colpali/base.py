@@ -202,7 +202,7 @@ class ColPaliRag:
 
         return embeddings
 
-    def embed_images(self) -> List[torch.Tensor]:
+    async def embed_images(self) -> List[torch.Tensor]:
         # TODO: Set up a Cron job to sync files and their embeddings each night
         # TODO: Dynamically identify which PDF images need to be indexed
         """Embed images using custom Dataset
@@ -217,7 +217,7 @@ class ColPaliRag:
         if self.store_locally:
             self._store_index_locally()
         else:
-            self.upsert_doc_embeddings()
+            await self.upsert_doc_embeddings()
 
         return embeddings
 
@@ -305,7 +305,8 @@ class ColPaliRag:
                     folder_path = str(self.input_dir)
 
                     # Check if folder already exists
-                    if not self.folder_has_embeddings():
+                    has_embeddings = await self.folder_has_embeddings()
+                    if not has_embeddings:
                         folder = Folder(
                             folder_name=folder_name,
                             folder_path=folder_path,
@@ -413,23 +414,24 @@ class ColPaliRag:
         ]
 
         if filepath or self.store_locally:
-            return self.retrieve_from_local_storage(filepath, qs, top_k)
+            return await self.retrieve_from_local_storage(filepath, qs, top_k)
 
-        if not self.folder_has_embeddings():
-            self.embed_images()
+        has_embeddings = await self.folder_has_embeddings()
+        if not has_embeddings:
+            await self.embed_images()
 
         await self.upsert_query_embeddings(query, query_embeddings)
         ctx = Context(SearchStrategyFactory.create_search_strategy("ANNHNSWHamming"))
         return await ctx.execute_strategy(query_embeddings, top_k)
 
-    def retrieve_from_local_storage(
+    async def retrieve_from_local_storage(
         self, filepath: str, qs: List[torch.Tensor], top_k: int
     ) -> List[Dict[str, Any]]:
 
         embeddings = (
             [data.embedding for data in self.load_stored_embeddings(filepath).values()]
             if filepath
-            else self.embed_images()
+            else await self.embed_images()
         )
 
         if self.store_locally and not filepath:
