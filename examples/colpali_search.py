@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from searchagent.colpali.base import ColPaliRag
 from searchagent.utils import project_paths
+from searchagent.db_connection import enable_pgvector_extension
 
 pdfs_dir = project_paths.PDF_DIR
 single_file_dir = project_paths.SINGLE_FILE_DIR
@@ -16,6 +17,7 @@ app = FastAPI()
 async def lifespan(app: FastAPI):
     _ = rag.model
     _ = rag.processor
+    await enable_pgvector_extension()
 
 
 @app.get("/")

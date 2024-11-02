@@ -16,7 +16,7 @@ from searchagent.colpali.pdf_images_processor import PDFImagesProcessor
 from searchagent.colpali.profiler import profile_colpali
 from searchagent.colpali.search_engine.context import Context
 from searchagent.colpali.search_engine.strategy_factory import SearchStrategyFactory
-from searchagent.db_connection import Session, inspector
+from searchagent.db_connection import async_session, inspector
 from searchagent.models import Embedding, File, FlattenedEmbedding, Folder, Page, Query
 from searchagent.utils import VectorList, batch_processing, get_now
 from sqlalchemy import select, text
@@ -267,8 +267,8 @@ class ColPaliRag:
         with open(output_file, "w") as f:
             json.dump(self.embeddings_by_page_id, f, indent=4)
 
-    def upsert_query_embeddings(self, query: str, query_embeddings: VectorList):
-        with Session.begin() as session:
+    async def upsert_query_embeddings(self, query: str, query_embeddings: VectorList):
+        async with async_session.begin() as session:
             q = Query(
                 text=query,
                 vector_embedding=query_embeddings,
@@ -277,19 +277,19 @@ class ColPaliRag:
             )
             session.add(q)
 
-    def folder_has_embeddings(self):
+    async def folder_has_embeddings(self):
         folder_path = str(self.input_dir)
 
-        with Session.begin() as session:
+        async with async_session.begin() as session:
             folder_stm = select(Folder).filter_by(folder_path=folder_path)
-            return session.scalar(folder_stm)
+            return await session.scalar(folder_stm)
 
-    def upsert_doc_embeddings(self):
+    async def upsert_doc_embeddings(self):
         """Upsert embeddings to PostgreSQL"""
 
-        with Session.begin() as session:
+        async with async_session.begin() as session:
 
-            def add_embeddings_to_session(batch):
+            async def add_embeddings_to_session(batch):
 
                 for key, value in batch:
                     parts = key.split("_")
@@ -316,7 +316,7 @@ class ColPaliRag:
 
                     # Check if file already exists
                     file_stm = select(File).filter_by(filepath=filepath)
-                    file = session.scalar(file_stm)
+                    file = await session.scalar(file_stm)
                     if not file:
                         file = File(
                             filename=filename,
@@ -345,7 +345,7 @@ class ColPaliRag:
                     )
                     session.add(embedding)
 
-                    def add_flattened_embeddings_to_session(batch: List[Any]):
+                    async def add_flattened_embeddings_to_session(batch: List[Any]):
                         for e in batch:
                             flattened_embedding = FlattenedEmbedding(
                                 vector_embedding=e,
@@ -355,13 +355,13 @@ class ColPaliRag:
                             )
                             session.add(flattened_embedding)
 
-                    batch_processing(
+                    await batch_processing(
                         original_list=vector_embedding,
                         batch_size=300,
                         func=add_flattened_embeddings_to_session,
                     )
 
-            batch_processing(
+            await batch_processing(
                 original_list=self.embeddings_by_page_id.items(),
                 batch_size=100,
                 func=add_embeddings_to_session,
@@ -373,7 +373,7 @@ class ColPaliRag:
                 if table_name == "user":
                     continue
                 sql = text(f"ANALYZE {table_name};")
-                session.execute(sql)
+                await session.execute(sql)
 
     def load_stored_embeddings(self, filepath: str) -> Dict[str, StoredImageData]:
         """Load stored embeddings in memory"""
@@ -383,7 +383,7 @@ class ColPaliRag:
                 self.stored_embeddings[page_pdf_id] = StoredImageData.from_json(data)
         return self.stored_embeddings
 
-    def search(
+    async def search(
         self, query: str, top_k: int = 3, filepath: Optional[str] = None
     ) -> Optional[List[Dict[str, Any]]]:
         """Search for the relevant file based on the query
@@ -418,9 +418,9 @@ class ColPaliRag:
         if not self.folder_has_embeddings():
             self.embed_images()
 
-        self.upsert_query_embeddings(query, query_embeddings)
+        await self.upsert_query_embeddings(query, query_embeddings)
         ctx = Context(SearchStrategyFactory.create_search_strategy("ANNHNSWHamming"))
-        return ctx.execute_strategy(query_embeddings, top_k)
+        return await ctx.execute_strategy(query_embeddings, top_k)
 
     def retrieve_from_local_storage(
         self, filepath: str, qs: List[torch.Tensor], top_k: int
