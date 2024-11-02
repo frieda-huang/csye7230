@@ -21,6 +21,7 @@ This is a wrapper on [colpali](https://github.com/illuin-tech/colpali/tree/main)
 -   [Use PgTune to set initial values for Postgres server parameters](https://pgtune.leopard.in.ua/)
 -   [How to Use ANALYZE Command in PostgreSQL](https://www.commandprompt.com/education/how-to-use-analyze-command-in-postgresql/)
 -   [PostgreSQL performance tips](https://www.postgresql.org/docs/current/populate.html#DISABLE-AUTOCOMMIT)
+-   [Understanding pgvector's HNSW Index Storage in Postgres](https://lantern.dev/blog/pgvector-storage)
 
 ## Relevant GitHub Repos
 
