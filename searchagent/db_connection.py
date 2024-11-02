@@ -1,16 +1,21 @@
+import asyncio
 import os
 
-from sqlalchemy import create_engine, text
 from sqlalchemy.engine.reflection import Inspector
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, text
 
 DBNAME = "searchagent"
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_engine(DATABASE_URL)
+engine = create_async_engine(DATABASE_URL)
 inspector = Inspector(bind=engine)
-Session = sessionmaker(bind=engine)
+async_session = async_sessionmaker(bind=engine, expire_on_commit=False)
+
 
 # Enable the pgvector extension
-with Session.begin() as session:
-    session.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+async def enable_pgvector_extension():
+    async with async_session.begin() as session:
+        await session.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+
+
+asyncio.run(enable_pgvector_extension())
