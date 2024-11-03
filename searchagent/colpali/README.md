@@ -22,6 +22,9 @@ This is a wrapper on [colpali](https://github.com/illuin-tech/colpali/tree/main)
 -   [How to Use ANALYZE Command in PostgreSQL](https://www.commandprompt.com/education/how-to-use-analyze-command-in-postgresql/)
 -   [PostgreSQL performance tips](https://www.postgresql.org/docs/current/populate.html#DISABLE-AUTOCOMMIT)
 -   [Understanding pgvector's HNSW Index Storage in Postgres](https://lantern.dev/blog/pgvector-storage)
+-   [How to measure execution time in PyTorch](https://discuss.pytorch.org/t/how-to-measure-execution-time-in-pytorch/111458)
+-   [Profiling in Python](https://realpython.com/python-profiling/)
+-   [Retrieval Evaluations](https://myscale.com/blog/ultimate-guide-to-evaluate-rag-system/)
 
 ## Relevant GitHub Repos
 
