@@ -7,6 +7,7 @@ from pdf2image import convert_from_path
 from PIL import Image
 from searchagent.colpali.models import ImageMetadata
 from searchagent.file_system.base import FileSystemManager
+from searchagent.ragmetrics.metrics import measure_latency_for_cpu, measure_ram
 
 
 class PDFImagesProcessor:
@@ -45,6 +46,8 @@ class PDFImagesProcessor:
         ]
 
     @classmethod
+    @measure_latency_for_cpu()
+    @measure_ram()
     def convert_pdf2image_from_dir(cls, input_dir: str, batch_size=4):
         import uuid
 

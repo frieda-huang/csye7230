@@ -5,6 +5,7 @@ from time import time
 from typing import Any, Callable, Iterable, List, TypeAlias
 
 import numpy as np
+import torch
 from loguru import logger
 
 VectorList: TypeAlias = List[np.array]
@@ -49,6 +50,14 @@ async def batch_processing(
     it = iter(original_list)
     while batch := list(islice(it, batch_size)):
         await func(batch)
+
+
+def create_dummy_input():
+    """Used for warming up GPU before measuring the latency"""
+    return {
+        "input_ids": torch.randint(0, 257152, (1, 25)).to("mps"),
+        "attention_mask": torch.ones((1, 25)).to("mps"),
+    }
 
 
 project_paths = ProjectPaths()

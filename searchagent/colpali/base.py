@@ -18,7 +18,8 @@ from searchagent.colpali.search_engine.context import Context
 from searchagent.colpali.search_engine.strategy_factory import SearchStrategyFactory
 from searchagent.db_connection import async_session, get_table_names
 from searchagent.models import Embedding, File, FlattenedEmbedding, Folder, Page, Query
-from searchagent.utils import VectorList, batch_processing, get_now
+from searchagent.ragmetrics.metrics import measure_latency_for_gpu, measure_vram
+from searchagent.utils import VectorList, batch_processing, create_dummy_input, get_now
 from sqlalchemy import select, text
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -140,6 +141,7 @@ class ColPaliRag:
     def run_inference(self, batches: dict):
         return self.model(**batches)
 
+    @measure_latency_for_gpu(dummy_input_fn=lambda: create_dummy_input())
     @torch.no_grad()
     def _embed(
         self,
@@ -202,6 +204,7 @@ class ColPaliRag:
 
         return embeddings
 
+    @measure_vram()
     async def embed_images(self) -> List[torch.Tensor]:
         # TODO: Set up a Cron job to sync files and their embeddings each night
         # TODO: Dynamically identify which PDF images need to be indexed
@@ -221,6 +224,7 @@ class ColPaliRag:
 
         return embeddings
 
+    @measure_vram()
     def embed_query(self, query: str) -> List[torch.Tensor]:
         return self._embed([query], self.processor.process_queries)
 
@@ -242,6 +246,9 @@ class ColPaliRag:
             ...
         }
         """
+        # Move to CPU to reflect correct vram measurement in embed_images
+        embeddings = [e.to("cpu") for e in embeddings]
+
         chunk_size = 1000
         embed_len = len(embeddings)
         for i in range(0, embed_len, chunk_size):
@@ -283,6 +290,9 @@ class ColPaliRag:
         async with async_session.begin() as session:
             folder_stm = select(Folder).filter_by(folder_path=folder_path)
             return await session.scalar(folder_stm)
+
+    def get_scores(self, qs: List[torch.Tensor], embeddings: List[torch.Tensor]):
+        return self.processor.score(qs, embeddings)
 
     async def upsert_doc_embeddings(self):
         """Upsert embeddings to PostgreSQL"""
@@ -437,7 +447,7 @@ class ColPaliRag:
         if self.store_locally and not filepath:
             self.load_stored_embeddings(self.stored_filepath)
 
-        scores = self.processor.score(qs, embeddings)
+        scores = self.get_scores(qs, embeddings)
         _, top_indices = torch.topk(scores, k=top_k, dim=1)
 
         # Ensure even if top_k=1, top_indices will be a 1D tensor, preventing the iteration error
