@@ -66,6 +66,8 @@ async def execute_turn(
                 turn = chunk.event.payload.turn
 
         message = turn.output_message
+        message.role = "user"
+        messages.append(message)
 
         if len(message.tool_calls) == 0:
             yield chunk
@@ -109,6 +111,7 @@ async def execute_turn(
                     content=json.dumps(result_message),
                     role="ipython",
                 )
+                messages.append(next_message)
 
             yield next_message
             current_messages = [next_message]

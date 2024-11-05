@@ -36,12 +36,17 @@ async def execute_turns(
     agent: AgentWithCustomToolExecutor,
     turn_inputs: List[UserTurnInput],
 ):
+    current_agent = agent
+
+    messages = []
+
     while len(turn_inputs) > 0:
         turn = turn_inputs.pop(0)
+        messages.append(turn.message)
 
         iterator = execute_turn(
             agent,
-            [turn.message],
+            messages,
             turn.attachments,
         )
         cprint(f"User> {turn.message.content}", color="white", attrs=["bold"])
@@ -49,5 +54,12 @@ async def execute_turns(
             if isinstance(log, ToolResponseMessage):
                 agent_info = json.loads(log.content)
                 name = agent_info["agent"]["name"]
-                agent = tools_mapping[name]
-                print(agent)
+                agent_dict = await tools_mapping[name]().run_impl()
+                agent_dict["name"] = name
+                agent = AgentWithCustomToolExecutor.from_dict(agent_dict)
+
+                if current_agent != tools_mapping[name]:
+                    current_agent = tools_mapping[name]
+                    turn_inputs.append(prompt_to_turn(agent_info["message"]))
+
+                print(agent.name)
