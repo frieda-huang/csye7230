@@ -39,4 +39,4 @@ class PDFSearchTool(SingleMessageCustomTool):
         return instance
 
     async def run_impl(self, query: str):
-        return self.colpali.search(query)
+        return await self.colpali.search(query)
