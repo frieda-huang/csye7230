@@ -28,7 +28,7 @@ einops = "^0.8.0"
 pgvector = "^0.3.3"
 python-magic = "^0.4.27"
 pypdf = "^5.0.0"
-textract = "^1.6.5"
+textract = "^1.6.4"
 python-docx = "^1.1.2"
 colpali-engine = "^0.3.3"
 torch = "^2.4.1"
@@ -42,6 +42,7 @@ ml-dtypes = "^0.5.0"
 llama-stack-client = "^0.0.41"
 watchdog = "^5.0.3"
 fastapi = {extras = ["standard"], version = "^0.115.4"}
+torchmetrics = "^1.5.1"
 
 
 [tool.poetry.group.dev.dependencies]
