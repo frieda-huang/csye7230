@@ -1,3 +1,4 @@
+import json
 from abc import abstractmethod
 from typing import List, Union
 
@@ -32,10 +33,11 @@ class SingleMessageCustomTool(CustomTool):
                 response["name"] = tool_name
                 return AgentWithCustomToolExecutor.from_dict(response)
             else:
+                response_str = json.dumps(response)
                 return ToolResponseMessage(
                     call_id=tool_call.call_id,
                     tool_name=tool_name,
-                    content=response,
+                    content=response_str,
                     role="ipython",
                 )
 

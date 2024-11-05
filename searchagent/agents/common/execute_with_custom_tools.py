@@ -102,7 +102,11 @@ async def execute_turn(
                             tool.get_name() for tool in current_agent.custom_tools
                         ],
                     },
-                    "message": result,
+                    "message": (
+                        result.model_dump()
+                        if isinstance(result, ToolResponseMessage)
+                        else result
+                    ),
                 }
 
                 next_message = ToolResponseMessage(
