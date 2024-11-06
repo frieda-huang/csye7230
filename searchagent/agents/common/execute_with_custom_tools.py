@@ -103,7 +103,8 @@ async def execute_turn(
                         ],
                     },
                     "message": (
-                        result.model_dump()
+                        json.dumps(result.model_dump())
+                        + " | **tool execution is completed!**"
                         if isinstance(result, ToolResponseMessage)
                         else result
                     ),
