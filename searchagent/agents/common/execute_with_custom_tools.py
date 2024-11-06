@@ -92,7 +92,12 @@ async def execute_turn(
 
                 if isinstance(result, AgentWithCustomToolExecutor):
                     current_agent = result
-                    result = f"Transfered to {current_agent.name}. Adopt persona immediately."
+                    result = (
+                        f"Transferred to {current_agent.name}. Adopt persona immediately. "
+                        "Use necessary tools to complete the user request. "
+                        "If a transfer is not complete, CONTINUE CALLING THE TOOL. "
+                        "If the request is fulfilled, you can leave tool_calls empty."
+                    )
 
                 result_message = {
                     "agent": {
