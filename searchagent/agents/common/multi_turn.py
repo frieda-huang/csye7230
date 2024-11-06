@@ -45,7 +45,7 @@ async def execute_turns(
         messages.append(turn.message)
 
         iterator = execute_turn(
-            agent,
+            current_agent,
             messages,
             turn.attachments,
         )
@@ -58,8 +58,8 @@ async def execute_turns(
                 agent_dict["name"] = name
                 agent = AgentWithCustomToolExecutor.from_dict(agent_dict)
 
-                if current_agent != tools_mapping[name]:
-                    current_agent = tools_mapping[name]
+                if current_agent != agent:
+                    current_agent = agent
                     turn_inputs.append(prompt_to_turn(agent_info["message"]))
 
                 print(agent.name)
