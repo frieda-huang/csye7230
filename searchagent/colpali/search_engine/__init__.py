@@ -1,9 +1,13 @@
+from searchagent.colpali.search_engine.indexing_strategies import HNSWIndexing
 from searchagent.colpali.search_engine.search_strategies import (
     ANNHNSWHammingSearchStrategy,
     ANNIVFFlatEuclideanSearchStrategy,
     ExactMaxSimSearchStrategy,
 )
-from searchagent.colpali.search_engine.strategy_factory import SearchStrategyFactory
+from searchagent.colpali.search_engine.strategy_factory import (
+    SearchStrategyFactory,
+    IndexingStrategyFactory,
+)
 
 SearchStrategyFactory.register_strategy(
     "ExactMaxSim",
@@ -19,3 +23,5 @@ SearchStrategyFactory.register_strategy(
     "ANNIVFFlatEuclidean",
     ANNIVFFlatEuclideanSearchStrategy,
 )
+
+IndexingStrategyFactory.register_strategy("HNSW", HNSWIndexing)

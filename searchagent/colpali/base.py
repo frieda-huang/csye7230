@@ -14,8 +14,11 @@ from searchagent.colpali.models import ImageMetadata, StoredImageData
 from searchagent.colpali.pdf_images_dataset import PDFImagesDataset
 from searchagent.colpali.pdf_images_processor import PDFImagesProcessor
 from searchagent.colpali.profiler import profile_colpali
-from searchagent.colpali.search_engine.context import Context
-from searchagent.colpali.search_engine.strategy_factory import SearchStrategyFactory
+from searchagent.colpali.search_engine.context import IndexingContext, SearchContext
+from searchagent.colpali.search_engine.strategy_factory import (
+    IndexingStrategyFactory,
+    SearchStrategyFactory,
+)
 from searchagent.db_connection import async_session, get_table_names
 from searchagent.models import Embedding, File, FlattenedEmbedding, Folder, Page, Query
 from searchagent.ragmetrics.metrics import measure_latency_for_gpu, measure_vram
@@ -386,6 +389,9 @@ class ColPaliRag:
                 sql = text(f"ANALYZE {table_name};")
                 await session.execute(sql)
 
+        ctx = IndexingContext(IndexingStrategyFactory.create_strategy("HNSW"))
+        await ctx.execute_indexing_strategy()
+
     def load_stored_embeddings(self, filepath: str) -> Dict[str, StoredImageData]:
         """Load stored embeddings in memory"""
         with open(filepath, "r") as f:
@@ -431,8 +437,8 @@ class ColPaliRag:
             await self.embed_images()
 
         await self.upsert_query_embeddings(query, query_embeddings)
-        ctx = Context(SearchStrategyFactory.create_search_strategy("ANNHNSWHamming"))
-        return await ctx.execute_strategy(query_embeddings, top_k)
+        ctx = SearchContext(SearchStrategyFactory.create_strategy("ANNHNSWHamming"))
+        return await ctx.execute_search_strategy(query_embeddings, top_k)
 
     async def retrieve_from_local_storage(
         self, filepath: str, qs: List[torch.Tensor], top_k: int

@@ -44,9 +44,9 @@ class ExactMaxSimSearchStrategy(SearchStrategy):
         ORDER BY
             tp.max_sim DESC;
         """
-        async with psycopg.AsyncConnection.connect(
-            dbname=DBNAME, autocommit=True
-        ) as conn:
+        conn = await psycopg.AsyncConnection.connect(dbname=DBNAME, autocommit=True)
+
+        async with conn:
             await register_vector_async(conn)
             r = await conn.execute(SQL_RETRIEVE_TOP_K_DOCS, (query_embeddings,))
             result = await r.fetchall()
