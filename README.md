@@ -154,6 +154,10 @@ max_parallel_workers = 12
 max_parallel_maintenance_workers = 4
 ```
 
+### Monitor Performance
+
+We use [pg_stat_statements](https://www.postgresql.org/docs/current/pgstatstatements.html) to monitor overall query performance in PostgreSQL
+
 ### Run Database Migration
 
 1. Create new migration by running `alembic revision --autogenerate -m "YOUR MSG"`
