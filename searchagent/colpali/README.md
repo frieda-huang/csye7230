@@ -235,4 +235,3 @@ Deployment Architecture
 -   https://github.com/pgvector/pgvector-python/issues/96
 -   https://github.com/pgvector/pgvector-python/issues/50
 -   https://github.com/pgvector/pgvector-python/issues/4
--   https://github.com/pgvector/pgvector/issues/500

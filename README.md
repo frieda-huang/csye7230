@@ -158,6 +158,14 @@ max_parallel_maintenance_workers = 4
 
 We use [pg_stat_statements](https://www.postgresql.org/docs/current/pgstatstatements.html) to monitor overall query performance in PostgreSQL
 
+#### Caveat
+
+When querying high I/O activity, top time-consuming queries, or high memory usage, remember to use `pg_stat_statements_reset()` to flush data from pg_stat_statements
+
+### Maintenance
+
+`VACUUM ANALYZE;` to reduce bloat and refresh query planner statistics
+
 ### Run Database Migration
 
 1. Create new migration by running `alembic revision --autogenerate -m "YOUR MSG"`
@@ -254,3 +262,4 @@ This PDF presents the benchmarking report for CSYE7230, evaluating the performan
 -   [Llama3.2 is here](https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/)
 -   [The The Ultimate Guide to Vector Database Landscape — 2024 and Beyond](https://medium.com/madhukarkumar/the-ultimate-guide-to-vector-databases-2024-and-beyond-16dfb15bef12)
 -   [pgvector: Multi-vector support](https://github.com/pgvector/pgvector/issues/640)
+-   [pg_stat_statements](https://dbaclass.com/article/monitor-sql-queries-in-postgres-using-pg_stat_statements/)
