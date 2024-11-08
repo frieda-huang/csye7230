@@ -37,14 +37,11 @@ Updated: 10/20/2024
 1. Currently, we are adding new folder, files, and pages sequentially. We need to bulk insert into multiple tables parallelly.
 2. We don't have a mechanism to dynamically detect new folders/files to embed yet. `embed_images()` assumes all PDF images need to be processed. This might be solved through LLM agents.
 3. We can only process one directory. We need to be able to process multiple directories simultaneously.
-4. When user first searches, the system needs to know whether embeddings already exist in vector DB or the file simply doesn't exist.
-    - Have an efficient way of finding the relevant embedding clusters; if they don't exist, know what action to take.
 
 ## Improvement
 
 -   Loading the model takes quite some time
 -   Extract text from PDFs and use LLM to generate summary for each file
--   Use approximate search
 -   Improve memory efficiency by dividing each embedding into sub-vectors.
 -   Use IVFPQ (Inverted File with Product Quantization)
 
@@ -210,7 +207,7 @@ Updated: 10/20/2024
 
 Model Loading Optimization
 
--   [ ] Use model quantization (int8 or fp16) to reduce memory footprint
+-   [x] Use model quantization (int8 or fp16) to reduce memory footprint
 -   [ ] Implement model weight sharding for distributed reference
 -   [ ] Use ONNX Runtime and TensorRT for inference optimization
 
