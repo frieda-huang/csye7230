@@ -1,5 +1,6 @@
 import os
 import tempfile
+import uuid
 from itertools import islice
 from typing import Dict, List, Optional
 
@@ -45,12 +46,14 @@ class PDFImagesProcessor:
             for page_id in range(total_pages)
         ]
 
+    @staticmethod
+    def get_uuid() -> str:
+        return str(uuid.uuid4())
+
     @classmethod
     @measure_latency_for_cpu()
     @measure_ram()
     def convert_pdf2image_from_dir(cls, input_dir: str, batch_size=4):
-        import uuid
-
         filepaths = FileSystemManager(input_dir).list_files(["application/pdf"])
 
         images_list = []
@@ -60,7 +63,7 @@ class PDFImagesProcessor:
             for fp in batch:
                 single_pdf_images = cls.convert_single_pdf(fp)
                 total_pages = len(single_pdf_images)
-                pdf_id = str(uuid.uuid4())
+                pdf_id = cls.get_uuid()
 
                 images_list.append(single_pdf_images)
                 pdf_metadata[pdf_id] = cls.generate_images_metadata(
@@ -74,3 +77,38 @@ class PDFImagesProcessor:
             process_batch(batch)
 
         return cls(input_dir, images_list, pdf_metadata)
+
+    @classmethod
+    def retrieve_pdfImage_from_vidore(cls, batch_size=4, dataset_size: int = 16):
+        """We use this method to benchmark our rag system
+
+        We will use the dataset from https://huggingface.co/datasets/vidore/syntheticDocQA_artificial_intelligence_test
+        """
+        from datasets import load_dataset
+
+        ds = load_dataset(
+            "vidore/syntheticDocQA_artificial_intelligence_test",
+            split=f"test[:{dataset_size}]",
+        )
+
+        image_list = [[image] for image in ds["image"]]
+        pdf_metadata: Dict[str, List[ImageMetadata]] = {}
+
+        def process_batch(batch):
+            for row in batch:
+                pdf_id = cls.get_uuid()
+                pdf_metadata[pdf_id] = [
+                    ImageMetadata(
+                        pdf_id=pdf_id,
+                        page_id=int(row["page"]),
+                        filename=row["image_filename"],
+                        total_pages=0,
+                        filepath="",
+                    )
+                ]
+
+        it = iter(ds)
+        while batch := list(islice(it, batch_size)):
+            process_batch(batch)
+
+        return cls(images_list=image_list, pdf_metadata=pdf_metadata)

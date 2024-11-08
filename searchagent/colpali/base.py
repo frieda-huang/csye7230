@@ -32,21 +32,23 @@ from transformers import BatchFeature, PreTrainedModel
 class ColPaliRag:
     def __init__(
         self,
-        input_dir: Union[Path, str],
+        input_dir: Optional[Union[Path, str]] = None,
         model_name: Optional[str] = None,
         store_locally: bool = True,
         hf_api_key: Optional[str] = None,
+        benchmark: bool = False,
     ):
         """
         A RAG system using a visual language model called Colpali to process PDF files
 
         Args:
             query (str): search query
-            input_dir (Union[Path, str]): Path to the PDF directory
+            input_dir (Optional[Union[Path, str]]): Path to the PDF directory
             model_name (Optional[str]): Name of a Colpali pretrained model
                 Default is "vidore/colpali-v1.2"
             store_locally (Optional[bool]): Whether to store index locally or upload to the VectorDB
                 Default is True
+            benchmark (bool): Allow us to benchmark the performance of ColPali RAG system
         """
 
         # Lazy loadings
@@ -58,23 +60,39 @@ class ColPaliRag:
         self.user_id = 1  # Replace with actual user ID
         self.metadata = None
 
-        self.input_dir = Path(input_dir)
         self.store_locally = store_locally
         self.device = get_torch_device()
         self.model_name = model_name or "vidore/colpali-v1.2"
         self.hf_api_key = hf_api_key or os.getenv("HF_API_KEY")
+        self.benchmark = benchmark
 
-        self.pdf_processor = PDFImagesProcessor.convert_pdf2image_from_dir(
-            str(self.input_dir)
-        )
-        self.images = self.pdf_processor.images_list
-        self.pdf_metadata = self.pdf_processor.pdf_metadata
+        if input_dir:
+            self.input_dir = Path(input_dir)
 
         if not self.hf_api_key:
             raise ValueError("HuggingFace API key is required")
 
-        if not self.input_dir.is_dir():
+        if input_dir and not self.input_dir.is_dir():
             raise ValueError(f"Input directory does not exist: {input_dir}")
+
+        if not input_dir and not benchmark:
+            raise ValueError("input_dir is required if benchmark mode is not on")
+
+        if input_dir and benchmark:
+            raise ValueError(
+                "Benchmark mode is currently on. We will use ViDoRe dataset instead"
+            )
+
+        if input_dir:
+            self.pdf_processor = PDFImagesProcessor.convert_pdf2image_from_dir(
+                str(self.input_dir)
+            )
+
+        if not input_dir and benchmark:
+            self.pdf_processor = PDFImagesProcessor.retrieve_pdfImage_from_vidore()
+
+        self.images = self.pdf_processor.images_list
+        self.pdf_metadata = self.pdf_processor.pdf_metadata
 
     @property
     def model(self) -> PreTrainedModel:
@@ -287,7 +305,7 @@ class ColPaliRag:
             )
             session.add(q)
 
-    async def folder_has_embeddings(self):
+    async def has_folder_embedded(self):
         folder_path = str(self.input_dir)
 
         async with async_session.begin() as session:
@@ -314,11 +332,18 @@ class ColPaliRag:
                     filename = metadata["filename"]
                     filepath = metadata["filepath"]
                     total_pages = metadata["total_pages"]
-                    folder_name = str(self.input_dir.name)
-                    folder_path = str(self.input_dir)
+                    folder_name, folder_path = "", ""
+
+                    if not self.benchmark:
+                        folder_name = str(self.input_dir.name)
+                        folder_path = str(self.input_dir)
 
                     # Check if folder already exists
-                    has_embeddings = await self.folder_has_embeddings()
+                    has_embeddings = (
+                        await self.has_folder_embedded()
+                        if not self.benchmark
+                        else False
+                    )
                     if not has_embeddings:
                         folder = Folder(
                             folder_name=folder_name,
@@ -429,10 +454,14 @@ class ColPaliRag:
             for elem in embed.view(dtype=torch.uint16).numpy().view(ml_dtypes.bfloat16)
         ]
 
-        if filepath or self.store_locally:
+        # TODO: Refactor it
+        if filepath and self.store_locally:
             return await self.retrieve_from_local_storage(filepath, qs, top_k)
 
-        has_embeddings = await self.folder_has_embeddings()
+        has_embeddings = False
+        if not self.benchmark:
+            has_embeddings = await self.has_folder_embedded()
+
         if not has_embeddings:
             await self.embed_images()
 
