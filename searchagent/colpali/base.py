@@ -10,10 +10,10 @@ from colpali_engine.models import ColPali
 from colpali_engine.models.paligemma.colpali.processing_colpali import ColPaliProcessor
 from colpali_engine.utils.torch_utils import ListDataset, get_torch_device
 from PIL import Image
-from searchagent.colpali.schema import ImageMetadata
 from searchagent.colpali.pdf_images_dataset import PDFImagesDataset
 from searchagent.colpali.pdf_images_processor import PDFImagesProcessor
 from searchagent.colpali.profiler import profile_colpali
+from searchagent.colpali.schemas import ImageMetadata
 from searchagent.colpali.search_engine.context import IndexingContext, SearchContext
 from searchagent.colpali.search_engine.strategy_factory import (
     IndexingStrategyFactory,
@@ -202,7 +202,7 @@ class ColPaliRag:
             if isinstance(dataset, PDFImagesDataset):
                 batch_images, metadata = batch
                 batches = {k: v.to(self.device) for k, v in batch_images.items()}
-                mdata.extend(meta.to_json() for meta in metadata)
+                mdata.extend(meta.model_dump() for meta in metadata)
                 self.metadata = mdata
             else:
                 batches = {k: v.to(self.device) for k, v in batch.items()}
