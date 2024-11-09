@@ -2,7 +2,7 @@ from itertools import chain
 from typing import Dict, List, Tuple
 
 from PIL import Image
-from searchagent.colpali.schema import ImageMetadata
+from searchagent.colpali.schemas import ImageMetadata
 from torch.utils.data import Dataset
 
 

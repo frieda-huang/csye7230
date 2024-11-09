@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 
 from pdf2image import convert_from_path
 from PIL import Image
-from searchagent.colpali.schema import ImageMetadata
+from searchagent.colpali.schemas import ImageMetadata
 from searchagent.file_system.base import FileSystemManager
 from searchagent.ragmetrics.metrics import measure_latency_for_cpu, measure_ram
 
