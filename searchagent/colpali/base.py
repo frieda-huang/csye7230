@@ -1,4 +1,3 @@
-import json
 import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
@@ -10,7 +9,7 @@ from colpali_engine.models import ColPali
 from colpali_engine.models.paligemma.colpali.processing_colpali import ColPaliProcessor
 from colpali_engine.utils.torch_utils import ListDataset, get_torch_device
 from PIL import Image
-from searchagent.colpali.models import ImageMetadata, StoredImageData
+from searchagent.colpali.models import ImageMetadata
 from searchagent.colpali.pdf_images_dataset import PDFImagesDataset
 from searchagent.colpali.pdf_images_processor import PDFImagesProcessor
 from searchagent.colpali.profiler import profile_colpali
@@ -34,7 +33,6 @@ class ColPaliRag:
         self,
         input_dir: Optional[Union[Path, str]] = None,
         model_name: Optional[str] = None,
-        store_locally: bool = True,
         hf_api_key: Optional[str] = None,
         benchmark: bool = False,
     ):
@@ -55,12 +53,9 @@ class ColPaliRag:
         self._model = None
         self._processor: Optional[ColPaliProcessor] = None
         self.embeddings_by_page_id = {}
-        self.stored_embeddings: Dict[str, StoredImageData] = {}
-        self.stored_filepath = None
         self.user_id = 1  # Replace with actual user ID
         self.metadata = None
 
-        self.store_locally = store_locally
         self.device = get_torch_device()
         self.model_name = model_name or "vidore/colpali-v1.2"
         self.hf_api_key = hf_api_key or os.getenv("HF_API_KEY")
@@ -238,10 +233,7 @@ class ColPaliRag:
 
         self.build_embed_metadata(embeddings, self.metadata)
 
-        if self.store_locally:
-            self._store_index_locally()
-        else:
-            await self.upsert_doc_embeddings()
+        await self.upsert_doc_embeddings()
 
         return embeddings
 
@@ -287,14 +279,6 @@ class ColPaliRag:
             }
             self.embeddings_by_page_id.update(update_dict)
 
-    def _store_index_locally(self):
-        import os
-
-        output_file = "embeddings_metadata.json"
-        self.stored_filepath = f"{os.getcwd()}/{output_file}"
-        with open(output_file, "w") as f:
-            json.dump(self.embeddings_by_page_id, f, indent=4)
-
     async def upsert_query_embeddings(self, query: str, query_embeddings: VectorList):
         async with async_session.begin() as session:
             q = Query(
@@ -305,7 +289,7 @@ class ColPaliRag:
             )
             session.add(q)
 
-    async def has_folder_embedded(self):
+    async def does_folder_entry_exist(self):
         folder_path = str(self.input_dir)
 
         async with async_session.begin() as session:
@@ -339,12 +323,12 @@ class ColPaliRag:
                         folder_path = str(self.input_dir)
 
                     # Check if folder already exists
-                    has_embeddings = (
-                        await self.has_folder_embedded()
+                    folder_entry_exists = (
+                        await self.does_folder_entry_exist()
                         if not self.benchmark
                         else False
                     )
-                    if not has_embeddings:
+                    if not folder_entry_exists:
                         folder = Folder(
                             folder_name=folder_name,
                             folder_path=folder_path,
@@ -419,14 +403,6 @@ class ColPaliRag:
         ctx = IndexingContext(IndexingStrategyFactory.create_strategy("HNSW"))
         await ctx.execute_indexing_strategy()
 
-    def load_stored_embeddings(self, filepath: str) -> Dict[str, StoredImageData]:
-        """Load stored embeddings in memory"""
-        with open(filepath, "r") as f:
-            json_data = json.load(f)
-            for page_pdf_id, data in json_data.items():
-                self.stored_embeddings[page_pdf_id] = StoredImageData.from_json(data)
-        return self.stored_embeddings
-
     async def search(
         self, query: str, top_k: int = 10, filepath: Optional[str] = None
     ) -> Optional[List[Dict[str, Any]]]:
@@ -456,59 +432,8 @@ class ColPaliRag:
             for elem in embed.view(dtype=torch.uint16).numpy().view(ml_dtypes.bfloat16)
         ]
 
-        # TODO: Refactor it
-        if filepath and self.store_locally:
-            return await self.retrieve_from_local_storage(filepath, qs, top_k)
-
-        has_embeddings = False
-        if not self.benchmark:
-            has_embeddings = await self.has_folder_embedded()
-
-        if not has_embeddings:
-            await self.embed_images()
+        await self.embed_images()
 
         await self.upsert_query_embeddings(query, query_embeddings)
         ctx = SearchContext(SearchStrategyFactory.create_strategy("ANNHNSWHamming"))
         return await ctx.execute_search_strategy(query_embeddings, top_k)
-
-    async def retrieve_from_local_storage(
-        self, filepath: str, qs: List[torch.Tensor], top_k: int
-    ) -> List[Dict[str, Any]]:
-
-        embeddings = (
-            [data.embedding for data in self.load_stored_embeddings(filepath).values()]
-            if filepath
-            else await self.embed_images()
-        )
-
-        if self.store_locally and not filepath:
-            self.load_stored_embeddings(self.stored_filepath)
-
-        scores = self.get_scores(qs, embeddings)
-        _, top_indices = torch.topk(scores, k=top_k, dim=1)
-
-        # Ensure even if top_k=1, top_indices will be a 1D tensor, preventing the iteration error
-        if top_k == 1:
-            top_indices = top_indices.squeeze().unsqueeze(0)
-        else:
-            top_indices = top_indices.squeeze()
-
-        # Create a mapping of (page_id, pdf_id) for retrieval
-        indexed_metadata = [
-            (data.metadata.page_id, data.metadata.pdf_id)
-            for data in self.stored_embeddings.values()
-        ]
-
-        # This will return a list of (pdf_id, page_id) for top results
-        top_metadata = [indexed_metadata[idx.item()] for idx in top_indices]
-        return self.retrieve_page_info(top_metadata)
-
-    def retrieve_page_info(
-        self, top_metadata: List[Tuple[str, int]]
-    ) -> List[Dict[str, Any]]:
-        if self.stored_embeddings:
-            return [
-                self.stored_embeddings[f"{page_id}_{pdf_id}"].to_json()
-                for page_id, pdf_id in top_metadata
-            ]
-        return []

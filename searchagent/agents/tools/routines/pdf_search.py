@@ -13,7 +13,7 @@ class PDFSearchTool(SingleMessageCustomTool):
     def __init__(self, input_dir: Union[Path, str]):
         super().__init__()
         self.input_dir = input_dir
-        self.colpali = ColPaliRag(input_dir, store_locally=False)
+        self.colpali = ColPaliRag(input_dir)
 
     def get_name(self) -> str:
         return "pdf_search"
