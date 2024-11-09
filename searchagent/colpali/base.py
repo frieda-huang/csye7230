@@ -1,3 +1,4 @@
+import asyncio
 import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
@@ -44,8 +45,6 @@ class ColPaliRag:
             input_dir (Optional[Union[Path, str]]): Path to the PDF directory
             model_name (Optional[str]): Name of a Colpali pretrained model
                 Default is "vidore/colpali-v1.2"
-            store_locally (Optional[bool]): Whether to store index locally or upload to the VectorDB
-                Default is True
             benchmark (bool): Allow us to benchmark the performance of ColPali RAG system
         """
 
@@ -221,7 +220,7 @@ class ColPaliRag:
         return embeddings
 
     @measure_vram()
-    async def embed_images(self) -> List[torch.Tensor]:
+    def embed_images(self) -> List[torch.Tensor]:
         # TODO: Set up a Cron job to sync files and their embeddings each night
         # TODO: Dynamically identify which PDF images need to be indexed
         """Embed images using custom Dataset
@@ -229,13 +228,7 @@ class ColPaliRag:
         https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
         """
         processed_images = PDFImagesDataset(self.images, self.pdf_metadata)
-        embeddings = self._embed(processed_images, self.image_collate_fn)
-
-        self.build_embed_metadata(embeddings, self.metadata)
-
-        await self.upsert_doc_embeddings()
-
-        return embeddings
+        return self._embed(processed_images, self.image_collate_fn)
 
     @measure_vram()
     def embed_query(self, query: str) -> List[torch.Tensor]:
@@ -404,15 +397,13 @@ class ColPaliRag:
         await ctx.execute_indexing_strategy()
 
     async def search(
-        self, query: str, top_k: int = 10, filepath: Optional[str] = None
+        self, query: str, top_k: int = 10
     ) -> Optional[List[Dict[str, Any]]]:
         """Search for the relevant file based on the query
 
         Args:
             query (str): Description about a file that user is searching
             top_k (int, optional): Top number of retrieved files. Defaults to 3.
-            filepath (Optional[str], optional):
-                Path to "embeddings_metadata.json"
 
         Returns:
             Optional[List[Dict[str, Any]]]: If the relevant file is found,
@@ -432,7 +423,11 @@ class ColPaliRag:
             for elem in embed.view(dtype=torch.uint16).numpy().view(ml_dtypes.bfloat16)
         ]
 
-        await self.embed_images()
+        embeddings = await asyncio.to_thread(self.embed_images)
+
+        await asyncio.to_thread(self.build_embed_metadata, embeddings, self.metadata)
+
+        await self.upsert_doc_embeddings()
 
         await self.upsert_query_embeddings(query, query_embeddings)
         ctx = SearchContext(SearchStrategyFactory.create_strategy("ANNHNSWHamming"))
