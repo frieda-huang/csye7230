@@ -354,7 +354,9 @@ class ColPaliRag:
                         session.add(folder)
 
                     # Check if file already exists
-                    file_stm = select(File).filter_by(filepath=filepath)
+                    file_stm = select(File).filter_by(
+                        filepath=filepath, filename=filename
+                    )
                     file = await session.scalar(file_stm)
                     if not file:
                         file = File(
@@ -426,7 +428,7 @@ class ColPaliRag:
         return self.stored_embeddings
 
     async def search(
-        self, query: str, top_k: int = 3, filepath: Optional[str] = None
+        self, query: str, top_k: int = 10, filepath: Optional[str] = None
     ) -> Optional[List[Dict[str, Any]]]:
         """Search for the relevant file based on the query
 
