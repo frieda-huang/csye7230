@@ -4,11 +4,11 @@ from pathlib import Path
 from time import time
 from typing import Any, Callable, Iterable, List, TypeAlias
 
-import numpy as np
+import numpy.typing as npt
 import torch
 from loguru import logger
 
-VectorList: TypeAlias = List[np.array]
+VectorList: TypeAlias = List[npt.NDArray]
 
 
 class ProjectPaths:

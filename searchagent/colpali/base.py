@@ -13,17 +13,24 @@ from PIL import Image
 from searchagent.colpali.pdf_images_dataset import PDFImagesDataset
 from searchagent.colpali.pdf_images_processor import PDFImagesProcessor
 from searchagent.colpali.profiler import profile_colpali
+from searchagent.colpali.repositories.all import (
+    EmbeddingRepository,
+    FileRepository,
+    FlattenedEmbeddingRepository,
+    FolderRepository,
+    PageRepository,
+    QueryRepository,
+)
 from searchagent.colpali.schemas import ImageMetadata
 from searchagent.colpali.search_engine.context import IndexingContext, SearchContext
 from searchagent.colpali.search_engine.strategy_factory import (
     IndexingStrategyFactory,
     SearchStrategyFactory,
 )
-from searchagent.db_connection import async_session, get_table_names
+from searchagent.db_connection import execute_analyze
 from searchagent.models import Embedding, File, FlattenedEmbedding, Folder, Page, Query
 from searchagent.ragmetrics.metrics import measure_latency_for_gpu, measure_vram
-from searchagent.utils import VectorList, batch_processing, create_dummy_input, get_now
-from sqlalchemy import select, text
+from searchagent.utils import batch_processing, create_dummy_input, get_now
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import BatchFeature, PreTrainedModel
@@ -272,106 +279,61 @@ class ColPaliRag:
             }
             self.embeddings_by_page_id.update(update_dict)
 
-    async def upsert_query_embeddings(self, query: str, query_embeddings: VectorList):
-        async with async_session.begin() as session:
-            q = Query(
-                text=query,
-                vector_embedding=query_embeddings,
-                created_at=get_now(),
-                user_id=self.user_id,
-            )
-            session.add(q)
-
-    async def does_folder_entry_exist(self):
-        folder_path = str(self.input_dir)
-
-        async with async_session.begin() as session:
-            folder_stm = select(Folder).filter_by(folder_path=folder_path)
-            return await session.scalar(folder_stm)
-
     def get_scores(self, qs: List[torch.Tensor], embeddings: List[torch.Tensor]):
         return self.processor.score(qs, embeddings)
 
     async def upsert_doc_embeddings(self):
         """Upsert embeddings to PostgreSQL"""
 
-        async with async_session.begin() as session:
+        folder_repo = FolderRepository(Folder)
+        file_repo = FileRepository(File)
+        page_repo = PageRepository(Page)
+        embedding_repo = EmbeddingRepository(Embedding)
+        flattened_embedding_repo = FlattenedEmbeddingRepository(FlattenedEmbedding)
 
-            async def add_embeddings_to_session(batch):
+        async def add_embeddings_to_session(batch):
 
-                for key, value in batch:
-                    parts = key.split("_")
-                    page_id = parts[0]
-                    embeddings = value["embedding"]
-                    vector_embedding = [np.array(e) for e in embeddings]
+            for key, value in batch:
+                parts = key.split("_")
+                page_id = parts[0]
+                embeddings = value["embedding"]
+                vector_embedding = [np.array(e) for e in embeddings]
 
-                    metadata = value["metadata"]
-                    filename = metadata["filename"]
-                    filepath = metadata["filepath"]
-                    total_pages = metadata["total_pages"]
-                    folder_name, folder_path = "", ""
+                metadata = value["metadata"]
+                filename = metadata["filename"]
+                filepath = metadata["filepath"]
+                total_pages = metadata["total_pages"]
+                folder_name, folder_path = "", ""
 
-                    if not self.benchmark:
-                        folder_name = str(self.input_dir.name)
-                        folder_path = str(self.input_dir)
+                if not self.benchmark:
+                    folder_name = str(self.input_dir.name)
+                    folder_path = str(self.input_dir)
 
-                    # Check if folder already exists
-                    folder_entry_exists = (
-                        await self.does_folder_entry_exist()
-                        if not self.benchmark
-                        else False
+                # Check if folder already exists
+                folder_entry_exists = (
+                    await folder_repo.get_by_folder_path(str(self.input_dir))
+                    if not self.benchmark
+                    else False
+                )
+                if not folder_entry_exists:
+                    folder = await folder_repo.add(
+                        folder_name, folder_path, self.user_id
                     )
-                    if not folder_entry_exists:
-                        folder = Folder(
-                            folder_name=folder_name,
-                            folder_path=folder_path,
-                            created_at=get_now(),
-                            user_id=self.user_id,
-                        )
-                        session.add(folder)
 
-                    # Check if file already exists
-                    file_stm = select(File).filter_by(
-                        filepath=filepath, filename=filename
-                    )
-                    file = await session.scalar(file_stm)
-                    if not file:
-                        file = File(
-                            filename=filename,
-                            filepath=filepath,
-                            filetype="pdf",
-                            total_pages=total_pages,
-                            last_modified=get_now(),
-                            created_at=get_now(),
-                            folder=folder,
-                        )
-                        session.add(file)
+                # Check if file already exists
+                file_entry_exists = await file_repo.get_by_filepath_filename(
+                    filepath, filename
+                )
 
-                    page = Page(
-                        page_number=page_id,
-                        last_modified=get_now(),
-                        created_at=get_now(),
-                        file=file,
-                    )
-                    session.add(page)
+                if not file_entry_exists:
+                    file = await file_repo.add(filepath, filename, total_pages, folder)
 
-                    embedding = Embedding(
-                        vector_embedding=vector_embedding,
-                        page=page,
-                        last_modified=get_now(),
-                        created_at=get_now(),
-                    )
-                    session.add(embedding)
+                    page = await page_repo.add(page_id, file)
+                    embedding = await embedding_repo.add(vector_embedding, page)
 
                     async def add_flattened_embeddings_to_session(batch: List[Any]):
                         for e in batch:
-                            flattened_embedding = FlattenedEmbedding(
-                                vector_embedding=e,
-                                last_modified=get_now(),
-                                created_at=get_now(),
-                                embedding=embedding,
-                            )
-                            session.add(flattened_embedding)
+                            await flattened_embedding_repo.add(e, embedding)
 
                     await batch_processing(
                         original_list=vector_embedding,
@@ -379,19 +341,14 @@ class ColPaliRag:
                         func=add_flattened_embeddings_to_session,
                     )
 
-            await batch_processing(
-                original_list=self.embeddings_by_page_id.items(),
-                batch_size=100,
-                func=add_embeddings_to_session,
-            )
+        await batch_processing(
+            original_list=self.embeddings_by_page_id.items(),
+            batch_size=100,
+            func=add_embeddings_to_session,
+        )
 
-            # Update the planner statistics to optimize query performance
-            table_names = await get_table_names()
-            for table_name in table_names:
-                if table_name == "user":
-                    continue
-                sql = text(f"ANALYZE {table_name};")
-                await session.execute(sql)
+        # Update the planner statistics to optimize query performance
+        await execute_analyze()
 
         ctx = IndexingContext(IndexingStrategyFactory.create_strategy("HNSW"))
         await ctx.execute_indexing_strategy()
@@ -429,6 +386,7 @@ class ColPaliRag:
 
         await self.upsert_doc_embeddings()
 
-        await self.upsert_query_embeddings(query, query_embeddings)
+        query_repo = QueryRepository(Query)
+        await query_repo.add(query, query_embeddings, self.user_id)
         ctx = SearchContext(SearchStrategyFactory.create_strategy("ANNHNSWHamming"))
         return await ctx.execute_search_strategy(query_embeddings, top_k)
