@@ -1,16 +1,17 @@
 from abc import ABC, abstractmethod
 
-from searchagent.db_connection import async_session
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class Repository[T](ABC):
-    def __init__(self, model: T):
+    def __init__(self, model: T, session: AsyncSession):
         self.model = model
+        self.session = session
 
     async def get_all(self) -> list[T]:
-        async with async_session() as session:
-            obj = await session.scalars(select(self.model))
+        async with self.session.begin():
+            obj = await self.session.scalars(select(self.model))
             return obj.all()
 
     @abstractmethod

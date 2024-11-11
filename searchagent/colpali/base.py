@@ -27,10 +27,10 @@ from searchagent.colpali.search_engine.strategy_factory import (
     IndexingStrategyFactory,
     SearchStrategyFactory,
 )
-from searchagent.db_connection import execute_analyze
+from searchagent.db_connection import async_session, execute_analyze
 from searchagent.models import Embedding, File, FlattenedEmbedding, Folder, Page, Query
-from searchagent.ragmetrics.metrics import measure_latency_for_gpu, measure_vram
-from searchagent.utils import batch_processing, create_dummy_input, get_now
+from searchagent.utils import batch_processing, get_now
+from sqlalchemy.ext.asyncio import AsyncSession
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import BatchFeature, PreTrainedModel
@@ -163,7 +163,7 @@ class ColPaliRag:
     def run_inference(self, batches: dict):
         return self.model(**batches)
 
-    @measure_latency_for_gpu(dummy_input_fn=lambda: create_dummy_input())
+    # @measure_latency_for_gpu(dummy_input_fn=lambda: create_dummy_input())
     @torch.no_grad()
     def _embed(
         self,
@@ -226,7 +226,7 @@ class ColPaliRag:
 
         return embeddings
 
-    @measure_vram()
+    # @measure_vram()
     def embed_images(self) -> List[torch.Tensor]:
         # TODO: Set up a Cron job to sync files and their embeddings each night
         # TODO: Dynamically identify which PDF images need to be indexed
@@ -237,7 +237,7 @@ class ColPaliRag:
         processed_images = PDFImagesDataset(self.images, self.pdf_metadata)
         return self._embed(processed_images, self.image_collate_fn)
 
-    @measure_vram()
+    # @measure_vram()
     def embed_query(self, query: str) -> List[torch.Tensor]:
         return self._embed([query], self.processor.process_queries)
 
@@ -282,14 +282,16 @@ class ColPaliRag:
     def get_scores(self, qs: List[torch.Tensor], embeddings: List[torch.Tensor]):
         return self.processor.score(qs, embeddings)
 
-    async def upsert_doc_embeddings(self):
+    async def upsert_doc_embeddings(self, session: AsyncSession):
         """Upsert embeddings to PostgreSQL"""
 
-        folder_repo = FolderRepository(Folder)
-        file_repo = FileRepository(File)
-        page_repo = PageRepository(Page)
-        embedding_repo = EmbeddingRepository(Embedding)
-        flattened_embedding_repo = FlattenedEmbeddingRepository(FlattenedEmbedding)
+        folder_repo = FolderRepository(Folder, session=session)
+        file_repo = FileRepository(File, session=session)
+        page_repo = PageRepository(Page, session=session)
+        embedding_repo = EmbeddingRepository(Embedding, session=session)
+        flattened_embedding_repo = FlattenedEmbeddingRepository(
+            FlattenedEmbedding, session=session
+        )
 
         async def add_embeddings_to_session(batch):
 
@@ -304,6 +306,7 @@ class ColPaliRag:
                 filepath = metadata["filepath"]
                 total_pages = metadata["total_pages"]
                 folder_name, folder_path = "", ""
+                folder, file = None, None
 
                 if not self.benchmark:
                     folder_name = str(self.input_dir.name)
@@ -319,6 +322,8 @@ class ColPaliRag:
                     folder = await folder_repo.add(
                         folder_name, folder_path, self.user_id
                     )
+                else:
+                    folder = folder_entry_exists
 
                 # Check if file already exists
                 file_entry_exists = await file_repo.get_by_filepath_filename(
@@ -327,19 +332,23 @@ class ColPaliRag:
 
                 if not file_entry_exists:
                     file = await file_repo.add(filepath, filename, total_pages, folder)
+                else:
+                    file = file_entry_exists
 
-                    page = await page_repo.add(page_id, file)
-                    embedding = await embedding_repo.add(vector_embedding, page)
+                page = await page_repo.add(page_id, file)
+                embedding = await embedding_repo.add(vector_embedding, page)
 
-                    async def add_flattened_embeddings_to_session(batch: List[Any]):
-                        for e in batch:
-                            await flattened_embedding_repo.add(e, embedding)
+                async def add_flattened_embeddings_to_session(
+                    batch: List[Any],
+                ):
+                    for e in batch:
+                        await flattened_embedding_repo.add(e, embedding)
 
-                    await batch_processing(
-                        original_list=vector_embedding,
-                        batch_size=300,
-                        func=add_flattened_embeddings_to_session,
-                    )
+                await batch_processing(
+                    original_list=vector_embedding,
+                    batch_size=300,
+                    func=add_flattened_embeddings_to_session,
+                )
 
         await batch_processing(
             original_list=self.embeddings_by_page_id.items(),
@@ -384,9 +393,10 @@ class ColPaliRag:
 
         await asyncio.to_thread(self.build_embed_metadata, embeddings, self.metadata)
 
-        await self.upsert_doc_embeddings()
+        async with async_session() as session:
+            await self.upsert_doc_embeddings(session=session)
+            query_repo = QueryRepository(Query, session=session)
+            await query_repo.add(query, query_embeddings, self.user_id)
 
-        query_repo = QueryRepository(Query)
-        await query_repo.add(query, query_embeddings, self.user_id)
         ctx = SearchContext(SearchStrategyFactory.create_strategy("ANNHNSWHamming"))
         return await ctx.execute_search_strategy(query_embeddings, top_k)

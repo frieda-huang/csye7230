@@ -7,7 +7,6 @@ from searchagent.utils import project_paths
 
 pdfs_dir = project_paths.PDF_DIR
 single_file_dir = project_paths.SINGLE_FILE_DIR
-embeddings_filepath = f"{project_paths}/embeddings_metadata.json"
 
 rag = ColPaliRag(benchmark=True)
 _ = rag.model
