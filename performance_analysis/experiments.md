@@ -7,13 +7,26 @@ Since HNSW supports incremental indexing, we don’t DROP the index programmatic
 #### Reduce Index Build Time
 
 -   Applied `CREATE INDEX CONCURRENTLY ...`
+
     -   _Outcome_: it reduces total time slightly, but not by large margin
+
+-   Experimented with different parameters for `ef_construction` = 128, 256, and 512 with `m = 16` and then `m = 32` with `ef_construction` being at least 4 \* `m` until reaching the target recall
 
 ### Cleaning
 
 Before running any tests, run the following commands one by one
 
 ```
+-- Find all indexes
+SELECT
+    tablename,
+    indexname,
+    indexdef
+FROM
+    pg_indexes
+WHERE
+    schemaname = 'public';
+
 -- Drop index first
 DROP INDEX IF EXISTS flattened_embedding_index;
 
