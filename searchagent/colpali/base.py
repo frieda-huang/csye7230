@@ -29,7 +29,7 @@ from searchagent.colpali.search_engine.strategy_factory import (
 )
 from searchagent.db_connection import async_session, execute_analyze
 from searchagent.models import Embedding, File, FlattenedEmbedding, Folder, Page, Query
-from searchagent.utils import batch_processing, get_now
+from searchagent.utils import batch_processing
 from sqlalchemy.ext.asyncio import AsyncSession
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -58,7 +58,6 @@ class ColPaliRag:
         # Lazy loadings
         self._model = None
         self._processor: Optional[ColPaliProcessor] = None
-        self.embeddings_by_page_id = {}
         self.user_id = 1  # Replace with actual user ID
         self.metadata = None
 
@@ -241,48 +240,12 @@ class ColPaliRag:
     def embed_query(self, query: str) -> List[torch.Tensor]:
         return self._embed([query], self.processor.process_queries)
 
-    def build_embed_metadata(self, embeddings: List[torch.Tensor], mdata: List[Dict]):
-        """Structure embeddings for faster retrieval
-        {
-            "page_1": {
-                "embedding": [0.1, 0.2, 0.3, ...],
-                "metadata": {
-                    "pdf_id": "pdf_1",
-                    "page_id": "page_1",
-                    "total_pages": 10,
-                    "filename": "document.pdf",
-                    "file_path": "/path/to/document.pdf",
-                },
-                "created_at": "2024-09-30T12:00:00Z",
-                "modified_at": "2024-09-30T12:00:00Z",
-            },
-            ...
-        }
-        """
-        # Move to CPU to reflect correct vram measurement in embed_images
-        embeddings = [e.to("cpu") for e in embeddings]
-
-        chunk_size = 1000
-        embed_len = len(embeddings)
-        for i in range(0, embed_len, chunk_size):
-            chunk_embeddings = embeddings[i : i + chunk_size]
-            chunk_metadata = mdata[i : i + chunk_size]
-
-            update_dict = {
-                f'{metadata["page_id"]}_{metadata["pdf_id"]}': {
-                    "embedding": embedding.tolist(),
-                    "metadata": metadata,
-                    "created_at": get_now(),
-                    "modified_at": get_now(),
-                }
-                for embedding, metadata in zip(chunk_embeddings, chunk_metadata)
-            }
-            self.embeddings_by_page_id.update(update_dict)
-
     def get_scores(self, qs: List[torch.Tensor], embeddings: List[torch.Tensor]):
         return self.processor.score(qs, embeddings)
 
-    async def upsert_doc_embeddings(self, session: AsyncSession):
+    async def upsert_doc_embeddings(
+        self, session: AsyncSession, embeddings: List[torch.Tensor]
+    ):
         """Upsert embeddings to PostgreSQL"""
 
         folder_repo = FolderRepository(Folder, session=session)
@@ -293,15 +256,18 @@ class ColPaliRag:
             FlattenedEmbedding, session=session
         )
 
-        async def add_embeddings_to_session(batch):
+        chunk_size = 500
+        embed_len = len(embeddings)
 
-            for key, value in batch:
-                parts = key.split("_")
-                page_id = parts[0]
-                embeddings = value["embedding"]
+        for i in range(0, embed_len, chunk_size):
+
+            chunk_embeddings = embeddings[i : i + chunk_size]
+            chunk_metadata = self.metadata[i : i + chunk_size]
+
+            for embedding, metadata in zip(chunk_embeddings, chunk_metadata):
+                page_id = metadata["page_id"]
+                embeddings = embedding.tolist()
                 vector_embedding = [np.array(e) for e in embeddings]
-
-                metadata = value["metadata"]
                 filename = metadata["filename"]
                 filepath = metadata["filepath"]
                 total_pages = metadata["total_pages"]
@@ -350,12 +316,6 @@ class ColPaliRag:
                     func=add_flattened_embeddings_to_session,
                 )
 
-        await batch_processing(
-            original_list=self.embeddings_by_page_id.items(),
-            batch_size=100,
-            func=add_embeddings_to_session,
-        )
-
         # Update the planner statistics to optimize query performance
         await execute_analyze()
 
@@ -391,10 +351,8 @@ class ColPaliRag:
 
         embeddings = await asyncio.to_thread(self.embed_images)
 
-        await asyncio.to_thread(self.build_embed_metadata, embeddings, self.metadata)
-
         async with async_session() as session:
-            await self.upsert_doc_embeddings(session=session)
+            await self.upsert_doc_embeddings(session=session, embeddings=embeddings)
             query_repo = QueryRepository(Query, session=session)
             await query_repo.add(query, query_embeddings, self.user_id)
 
