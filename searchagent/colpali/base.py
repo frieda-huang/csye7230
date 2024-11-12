@@ -29,7 +29,6 @@ from searchagent.colpali.search_engine.strategy_factory import (
 )
 from searchagent.db_connection import async_session, execute_analyze
 from searchagent.models import Embedding, File, FlattenedEmbedding, Folder, Page, Query
-from searchagent.utils import batch_processing
 from sqlalchemy.ext.asyncio import AsyncSession
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -256,65 +255,58 @@ class ColPaliRag:
             FlattenedEmbedding, session=session
         )
 
-        chunk_size = 500
-        embed_len = len(embeddings)
+        async with session.begin():
 
-        for i in range(0, embed_len, chunk_size):
+            chunk_size = 500
+            embed_len = len(embeddings)
 
-            chunk_embeddings = embeddings[i : i + chunk_size]
-            chunk_metadata = self.metadata[i : i + chunk_size]
+            for i in range(0, embed_len, chunk_size):
 
-            for embedding, metadata in zip(chunk_embeddings, chunk_metadata):
-                page_id = metadata["page_id"]
-                embeddings = embedding.tolist()
-                vector_embedding = [np.array(e) for e in embeddings]
-                filename = metadata["filename"]
-                filepath = metadata["filepath"]
-                total_pages = metadata["total_pages"]
-                folder_name, folder_path = "", ""
-                folder, file = None, None
+                chunk_embeddings = embeddings[i : i + chunk_size]
+                chunk_metadata = self.metadata[i : i + chunk_size]
 
-                if not self.benchmark:
-                    folder_name = str(self.input_dir.name)
-                    folder_path = str(self.input_dir)
+                for embedding, metadata in zip(chunk_embeddings, chunk_metadata):
+                    page_id = metadata["page_id"]
+                    embeddings = embedding.tolist()
+                    vector_embedding = [np.array(e) for e in embeddings]
+                    filename = metadata["filename"]
+                    filepath = metadata["filepath"]
+                    total_pages = metadata["total_pages"]
+                    folder_name, folder_path = "", ""
+                    folder, file = None, None
 
-                # Check if folder already exists
-                folder_entry_exists = (
-                    await folder_repo.get_by_folder_path(str(self.input_dir))
-                    if not self.benchmark
-                    else False
-                )
-                if not folder_entry_exists:
-                    folder = await folder_repo.add(
-                        folder_name, folder_path, self.user_id
+                    if not self.benchmark:
+                        folder_name = str(self.input_dir.name)
+                        folder_path = str(self.input_dir)
+
+                    # Check if folder already exists
+                    folder_entry_exists = (
+                        await folder_repo.get_by_folder_path(str(self.input_dir))
+                        if not self.benchmark
+                        else False
                     )
-                else:
-                    folder = folder_entry_exists
+                    if not folder_entry_exists:
+                        folder = await folder_repo.add(
+                            folder_name, folder_path, self.user_id
+                        )
+                    else:
+                        folder = folder_entry_exists
 
-                # Check if file already exists
-                file_entry_exists = await file_repo.get_by_filepath_filename(
-                    filepath, filename
-                )
+                    # Check if file already exists
+                    file_entry_exists = await file_repo.get_by_filepath_filename(
+                        filepath, filename
+                    )
 
-                if not file_entry_exists:
-                    file = await file_repo.add(filepath, filename, total_pages, folder)
-                else:
-                    file = file_entry_exists
+                    if not file_entry_exists:
+                        file = await file_repo.add(
+                            filepath, filename, total_pages, folder
+                        )
+                    else:
+                        file = file_entry_exists
 
-                page = await page_repo.add(page_id, file)
-                embedding = await embedding_repo.add(vector_embedding, page)
-
-                async def add_flattened_embeddings_to_session(
-                    batch: List[Any],
-                ):
-                    for e in batch:
-                        await flattened_embedding_repo.add(e, embedding)
-
-                await batch_processing(
-                    original_list=vector_embedding,
-                    batch_size=300,
-                    func=add_flattened_embeddings_to_session,
-                )
+                    page = await page_repo.add(page_id, file)
+                    embedding = await embedding_repo.add(vector_embedding, page)
+                    await flattened_embedding_repo.add(vector_embedding, embedding)
 
         # Update the planner statistics to optimize query performance
         await execute_analyze()
@@ -351,10 +343,10 @@ class ColPaliRag:
 
         embeddings = await asyncio.to_thread(self.embed_images)
 
-        async with async_session() as session:
-            await self.upsert_doc_embeddings(session=session, embeddings=embeddings)
-            query_repo = QueryRepository(Query, session=session)
-            await query_repo.add(query, query_embeddings, self.user_id)
+        session = async_session()
+        await self.upsert_doc_embeddings(session=session, embeddings=embeddings)
+        query_repo = QueryRepository(Query, session=session)
+        await query_repo.add(query, query_embeddings, self.user_id)
 
         ctx = SearchContext(SearchStrategyFactory.create_strategy("ANNHNSWHamming"))
         return await ctx.execute_search_strategy(query_embeddings, top_k)
