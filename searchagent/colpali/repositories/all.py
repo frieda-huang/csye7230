@@ -1,10 +1,9 @@
 from typing import List
 
-import numpy.typing as npt
 from searchagent.colpali.repositories.repository import Repository
 from searchagent.models import Embedding, File, FlattenedEmbedding, Folder, Page, Query
 from searchagent.utils import VectorList, get_now
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 
 class FolderRepository(Repository[Folder]):
@@ -22,9 +21,9 @@ class FolderRepository(Repository[Folder]):
         self.session.add(folder)
         return folder
 
-    async def delete(self, folder_path: str):
+    async def delete_by_folder_path(self, folder_path: str):
         folder = self.get_by_folder_path(folder_path)
-        self.session.delete(folder)
+        await self.session.delete(folder)
 
 
 class FileRepository(Repository[File]):
@@ -47,11 +46,12 @@ class FileRepository(Repository[File]):
         self.session.add(file)
         return file
 
-    async def delete(self, id: int) -> None:
-        pass
-
 
 class PageRepository(Repository[Page]):
+    async def get_by_page_number_and_file(self, page_number: int, file: File) -> Page:
+        file_stm = select(Page).filter_by(page_number=page_number, file_id=file.id)
+        return await self.session.scalar(file_stm)
+
     async def add(self, page_id: int, file: File) -> Page:
         page = Page(
             page_number=page_id,
@@ -62,11 +62,12 @@ class PageRepository(Repository[Page]):
         self.session.add(page)
         return page
 
-    async def delete(self, id: int) -> None:
-        pass
-
 
 class EmbeddingRepository(Repository[Embedding]):
+    async def get_by_page(self, page: Page) -> Embedding:
+        embedding_stm = select(Embedding).filter_by(page_id=page.id)
+        return await self.session.scalar(embedding_stm)
+
     async def add(self, vector_embedding: VectorList, page: Page) -> Embedding:
         embedding = Embedding(
             vector_embedding=vector_embedding,
@@ -77,13 +78,16 @@ class EmbeddingRepository(Repository[Embedding]):
         self.session.add(embedding)
         return embedding
 
-    async def delete(self, id: int) -> None:
-        pass
+    async def add_or_replace(self, vector_embedding: VectorList, page: Page):
+        existing_embedding = await self.get_by_page(page)
+        if existing_embedding:
+            await self.delete(existing_embedding)
+        return await self.add(vector_embedding, page)
 
 
 class FlattenedEmbeddingRepository(Repository[FlattenedEmbedding]):
     async def add(
-        self, vector_embedding: List[npt.NDArray], embedding: Embedding
+        self, vector_embedding: VectorList, embedding: Embedding
     ) -> List[FlattenedEmbedding]:
         flattened_embedding = [
             FlattenedEmbedding(
@@ -97,8 +101,18 @@ class FlattenedEmbeddingRepository(Repository[FlattenedEmbedding]):
         self.session.add_all(flattened_embedding)
         return flattened_embedding
 
-    async def delete(self, id: int) -> None:
-        pass
+    async def delete_by_embedding(self, embedding: Embedding):
+        delete_stm = delete(FlattenedEmbedding).where(
+            FlattenedEmbedding.embedding_id == embedding.id
+        )
+        await self.session.execute(delete_stm)
+
+    async def add_or_replace(
+        self, vector_embedding: VectorList, embedding: Embedding
+    ) -> List[FlattenedEmbedding]:
+        await self.delete_by_embedding(embedding)
+
+        await self.add(vector_embedding, embedding)
 
 
 class QueryRepository(Repository[Query]):
@@ -114,6 +128,3 @@ class QueryRepository(Repository[Query]):
             )
             self.session.add(query)
             return query
-
-    async def delete(self, id: int) -> None:
-        pass

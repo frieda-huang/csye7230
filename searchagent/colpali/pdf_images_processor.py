@@ -102,7 +102,7 @@ class PDFImagesProcessor:
                         pdf_id=pdf_id,
                         page_id=int(row["page"]),
                         filename=row["image_filename"],
-                        total_pages=0,
+                        total_pages=1,
                         filepath="",
                     )
                 ]

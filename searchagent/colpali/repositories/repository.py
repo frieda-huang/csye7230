@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -14,10 +14,10 @@ class Repository[T](ABC):
             obj = await self.session.scalars(select(self.model))
             return obj.all()
 
-    @abstractmethod
-    async def add(self, **kwargs: object) -> T:
-        raise NotImplementedError
+    async def delete(self, t: T) -> None:
+        delete_stm = delete(T).where(T.id == t.id)
+        await self.session.execute(delete_stm)
 
     @abstractmethod
-    async def delete(self, id: int) -> None:
+    async def add(self, **kwargs: object) -> T:
         raise NotImplementedError

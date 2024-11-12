@@ -13,23 +13,11 @@ from PIL import Image
 from searchagent.colpali.pdf_images_dataset import PDFImagesDataset
 from searchagent.colpali.pdf_images_processor import PDFImagesProcessor
 from searchagent.colpali.profiler import profile_colpali
-from searchagent.colpali.repositories.all import (
-    EmbeddingRepository,
-    FileRepository,
-    FlattenedEmbeddingRepository,
-    FolderRepository,
-    PageRepository,
-    QueryRepository,
-)
 from searchagent.colpali.schemas import ImageMetadata
-from searchagent.colpali.search_engine.context import IndexingContext, SearchContext
-from searchagent.colpali.search_engine.strategy_factory import (
-    IndexingStrategyFactory,
-    SearchStrategyFactory,
-)
-from searchagent.db_connection import async_session, execute_analyze
-from searchagent.models import Embedding, File, FlattenedEmbedding, Folder, Page, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+from searchagent.colpali.search_engine.context import SearchContext
+from searchagent.colpali.search_engine.strategy_factory import SearchStrategyFactory
+from searchagent.colpali.service import EmbeddingSerivce
+from searchagent.db_connection import async_session
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import BatchFeature, PreTrainedModel
@@ -59,6 +47,7 @@ class ColPaliRag:
         self._processor: Optional[ColPaliProcessor] = None
         self.user_id = 1  # Replace with actual user ID
         self.metadata = None
+        self.input_dir = None
 
         self.device = get_torch_device()
         self.model_name = model_name or "vidore/colpali-v1.2"
@@ -92,6 +81,9 @@ class ColPaliRag:
 
         self.images = self.pdf_processor.images_list
         self.pdf_metadata = self.pdf_processor.pdf_metadata
+        self.embedding_service = EmbeddingSerivce(
+            self.user_id, async_session(), self.input_dir, self.benchmark
+        )
 
     @property
     def model(self) -> PreTrainedModel:
@@ -207,7 +199,7 @@ class ColPaliRag:
             if isinstance(dataset, PDFImagesDataset):
                 batch_images, metadata = batch
                 batches = {k: v.to(self.device) for k, v in batch_images.items()}
-                mdata.extend(meta.model_dump() for meta in metadata)
+                mdata.extend(metadata)
                 self.metadata = mdata
             else:
                 batches = {k: v.to(self.device) for k, v in batch.items()}
@@ -242,78 +234,6 @@ class ColPaliRag:
     def get_scores(self, qs: List[torch.Tensor], embeddings: List[torch.Tensor]):
         return self.processor.score(qs, embeddings)
 
-    async def upsert_doc_embeddings(
-        self, session: AsyncSession, embeddings: List[torch.Tensor]
-    ):
-        """Upsert embeddings to PostgreSQL"""
-
-        folder_repo = FolderRepository(Folder, session=session)
-        file_repo = FileRepository(File, session=session)
-        page_repo = PageRepository(Page, session=session)
-        embedding_repo = EmbeddingRepository(Embedding, session=session)
-        flattened_embedding_repo = FlattenedEmbeddingRepository(
-            FlattenedEmbedding, session=session
-        )
-
-        async with session.begin():
-
-            chunk_size = 500
-            embed_len = len(embeddings)
-
-            for i in range(0, embed_len, chunk_size):
-
-                chunk_embeddings = embeddings[i : i + chunk_size]
-                chunk_metadata = self.metadata[i : i + chunk_size]
-
-                for embedding, metadata in zip(chunk_embeddings, chunk_metadata):
-                    page_id = metadata["page_id"]
-                    embeddings = embedding.tolist()
-                    vector_embedding = [np.array(e) for e in embeddings]
-                    filename = metadata["filename"]
-                    filepath = metadata["filepath"]
-                    total_pages = metadata["total_pages"]
-                    folder_name, folder_path = "", ""
-                    folder, file = None, None
-
-                    if not self.benchmark:
-                        folder_name = str(self.input_dir.name)
-                        folder_path = str(self.input_dir)
-
-                    # Check if folder already exists
-                    folder_entry_exists = (
-                        await folder_repo.get_by_folder_path(str(self.input_dir))
-                        if not self.benchmark
-                        else False
-                    )
-                    if not folder_entry_exists:
-                        folder = await folder_repo.add(
-                            folder_name, folder_path, self.user_id
-                        )
-                    else:
-                        folder = folder_entry_exists
-
-                    # Check if file already exists
-                    file_entry_exists = await file_repo.get_by_filepath_filename(
-                        filepath, filename
-                    )
-
-                    if not file_entry_exists:
-                        file = await file_repo.add(
-                            filepath, filename, total_pages, folder
-                        )
-                    else:
-                        file = file_entry_exists
-
-                    page = await page_repo.add(page_id, file)
-                    embedding = await embedding_repo.add(vector_embedding, page)
-                    await flattened_embedding_repo.add(vector_embedding, embedding)
-
-        # Update the planner statistics to optimize query performance
-        await execute_analyze()
-
-        ctx = IndexingContext(IndexingStrategyFactory.create_strategy("HNSW"))
-        await ctx.execute_indexing_strategy()
-
     async def search(
         self, query: str, top_k: int = 10
     ) -> Optional[List[Dict[str, Any]]]:
@@ -343,10 +263,8 @@ class ColPaliRag:
 
         embeddings = await asyncio.to_thread(self.embed_images)
 
-        session = async_session()
-        await self.upsert_doc_embeddings(session=session, embeddings=embeddings)
-        query_repo = QueryRepository(Query, session=session)
-        await query_repo.add(query, query_embeddings, self.user_id)
+        await self.embedding_service.upsert_doc_embeddings(embeddings, self.metadata)
+        await self.embedding_service.upsert_query_embeddings(query, query_embeddings)
 
         ctx = SearchContext(SearchStrategyFactory.create_strategy("ANNHNSWHamming"))
         return await ctx.execute_search_strategy(query_embeddings, top_k)
