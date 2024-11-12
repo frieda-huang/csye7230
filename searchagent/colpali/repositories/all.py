@@ -22,7 +22,7 @@ class FolderRepository(Repository[Folder]):
         return folder
 
     async def delete_by_folder_path(self, folder_path: str):
-        folder = self.get_by_folder_path(folder_path)
+        folder = await self.get_by_folder_path(folder_path)
         await self.session.delete(folder)
 
 
@@ -48,8 +48,8 @@ class FileRepository(Repository[File]):
 
 
 class PageRepository(Repository[Page]):
-    async def get_by_page_number_and_file(self, page_number: int, file: File) -> Page:
-        file_stm = select(Page).filter_by(page_number=page_number, file_id=file.id)
+    async def get_by_page_id_and_file(self, page_id: int, file: File) -> Page:
+        file_stm = select(Page).filter_by(id=page_id, file_id=file.id)
         return await self.session.scalar(file_stm)
 
     async def add(self, page_id: int, file: File) -> Page:
@@ -78,14 +78,24 @@ class EmbeddingRepository(Repository[Embedding]):
         self.session.add(embedding)
         return embedding
 
-    async def add_or_replace(self, vector_embedding: VectorList, page: Page):
+    async def add_or_replace(
+        self, vector_embedding: VectorList, page: Page
+    ) -> Embedding:
         existing_embedding = await self.get_by_page(page)
+
         if existing_embedding:
             await self.delete(existing_embedding)
+
         return await self.add(vector_embedding, page)
 
 
 class FlattenedEmbeddingRepository(Repository[FlattenedEmbedding]):
+    async def get_by_embedding(self, embedding: Embedding) -> List[FlattenedEmbedding]:
+        flattened_embedding_stm = select(FlattenedEmbedding).filter_by(
+            embedding_id=embedding.id
+        )
+        return await self.session.scalars(flattened_embedding_stm)
+
     async def add(
         self, vector_embedding: VectorList, embedding: Embedding
     ) -> List[FlattenedEmbedding]:
@@ -110,9 +120,12 @@ class FlattenedEmbeddingRepository(Repository[FlattenedEmbedding]):
     async def add_or_replace(
         self, vector_embedding: VectorList, embedding: Embedding
     ) -> List[FlattenedEmbedding]:
-        await self.delete_by_embedding(embedding)
+        existing_flattened_embedding = await self.get_by_embedding(embedding)
 
-        await self.add(vector_embedding, embedding)
+        if existing_flattened_embedding:
+            await self.delete_by_embedding(embedding)
+
+        return await self.add(vector_embedding, embedding)
 
 
 class QueryRepository(Repository[Query]):

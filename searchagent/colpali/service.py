@@ -90,6 +90,16 @@ class EmbeddingSerivce:
             )
         return file
 
+    async def _get_or_add_page(self, file: File, metadata: ImageMetadata) -> Page:
+        page_id = metadata.page_id
+
+        page = await self.page_repository.get_by_page_id_and_file(page_id, file)
+
+        if not page:
+            page = await self.page_repository.add(page_id, file)
+
+        return page
+
     async def _process_chunk(
         self, embeddings_chunk: List[torch.Tensor], metadata_chunk: List[ImageMetadata]
     ):
@@ -104,13 +114,15 @@ class EmbeddingSerivce:
 
         folder = await self._get_or_add_folder()
         file = await self._get_or_add_file(folder, metadata)
+        page = await self._get_or_add_page(file, metadata)
 
-        page = await self.page_repository.add(metadata.page_id, file)
         embedding = await self.embedding_repository.add_or_replace(
             vector_embedding, page
         )
 
-        await self.flattened_embedding_repository.add(vector_embedding, embedding)
+        await self.flattened_embedding_repository.add_or_replace(
+            vector_embedding, embedding
+        )
 
     async def _finalize_operations(self):
         """Update database statistics and execute indexing"""
