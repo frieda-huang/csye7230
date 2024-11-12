@@ -74,7 +74,7 @@ class Embedding(Base):
 
     page: Mapped[Page] = relationship(back_populates="embeddings")
     flattened_embeddings: Mapped[list["FlattenedEmbedding"]] = relationship(
-        back_populates="embedding"
+        back_populates="embedding", cascade="all, delete-orphan", passive_deletes=True
     )
 
     def __repr__(self) -> str:
@@ -89,7 +89,9 @@ class FlattenedEmbedding(Base):
     last_modified: Mapped[datetime] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(String, nullable=False)
 
-    embedding_id: Mapped[int] = mapped_column(ForeignKey("embedding.id"))
+    embedding_id: Mapped[int] = mapped_column(
+        ForeignKey("embedding.id", ondelete="CASCADE")
+    )
 
     embedding: Mapped[Embedding] = relationship(back_populates="flattened_embeddings")
 
