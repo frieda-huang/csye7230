@@ -36,7 +36,7 @@ class Page(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Page(page_number={self.page_number}, file_id={self.file_id})>"
+        return f"<Page(id={self.id}, page_number={self.page_number}, file_id={self.file_id})>"
 
 
 class File(Base):
@@ -59,7 +59,9 @@ class File(Base):
     folder: Mapped["Folder"] = relationship(back_populates="files")
 
     def __repr__(self) -> str:
-        return f"<File(filename={self.filename}, filetype={self.filetype})>"
+        return (
+            f"<File(id={self.id}, filename={self.filename}, filetype={self.filetype})>"
+        )
 
 
 class Embedding(Base):
@@ -78,7 +80,7 @@ class Embedding(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Embedding(page_id={self.page_id})>"
+        return f"<Embedding(id={self.id}, page_id={self.page_id})>"
 
 
 class FlattenedEmbedding(Base):
@@ -96,7 +98,7 @@ class FlattenedEmbedding(Base):
     embedding: Mapped[Embedding] = relationship(back_populates="flattened_embeddings")
 
     def __repr__(self) -> str:
-        return f"<FlattenedEmbedding(embedding_id={self.embedding_id})>"
+        return f"<FlattenedEmbedding(id={self.id}, embedding_id={self.embedding_id})>"
 
 
 class Folder(Base):
@@ -115,9 +117,7 @@ class Folder(Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<Folder(folder_name={self.folder_name}, folder_path={self.folder_path})>"
-        )
+        return f"<Folder(id={self.id}, folder_name={self.folder_name}, folder_path={self.folder_path})>"
 
 
 class Query(Base):
@@ -132,7 +132,7 @@ class Query(Base):
     user: Mapped["User"] = relationship(back_populates="queries")
 
     def __repr__(self) -> str:
-        return f"<Query(text={self.text})>"
+        return f"<Query(id={self.id}, text={self.text})>"
 
 
 class User(Base):
@@ -149,4 +149,4 @@ class User(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<User(email={self.email}, created_at={self.created_at})>"
+        return f"<User(id={self.id}, email={self.email}, created_at={self.created_at})>"
