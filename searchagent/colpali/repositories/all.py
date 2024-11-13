@@ -78,24 +78,22 @@ class EmbeddingRepository(Repository[Embedding]):
         self.session.add(embedding)
         return embedding
 
+    async def delete_by_page(self, page: Page):
+        delete_stm = delete(Embedding).where(Embedding.page_id == page.id)
+        await self.session.execute(delete_stm)
+
     async def add_or_replace(
         self, vector_embedding: VectorList, page: Page
     ) -> Embedding:
         existing_embedding = await self.get_by_page(page)
 
         if existing_embedding:
-            await self.delete(existing_embedding)
+            await self.delete_by_page(page)
 
         return await self.add(vector_embedding, page)
 
 
 class FlattenedEmbeddingRepository(Repository[FlattenedEmbedding]):
-    async def get_by_embedding(self, embedding: Embedding) -> List[FlattenedEmbedding]:
-        flattened_embedding_stm = select(FlattenedEmbedding).filter_by(
-            embedding_id=embedding.id
-        )
-        return await self.session.scalars(flattened_embedding_stm)
-
     async def add(
         self, vector_embedding: VectorList, embedding: Embedding
     ) -> List[FlattenedEmbedding]:
@@ -120,11 +118,7 @@ class FlattenedEmbeddingRepository(Repository[FlattenedEmbedding]):
     async def add_or_replace(
         self, vector_embedding: VectorList, embedding: Embedding
     ) -> List[FlattenedEmbedding]:
-        existing_flattened_embedding = await self.get_by_embedding(embedding)
-
-        if existing_flattened_embedding:
-            await self.delete_by_embedding(embedding)
-
+        await self.delete_by_embedding(embedding)
         return await self.add(vector_embedding, embedding)
 
 

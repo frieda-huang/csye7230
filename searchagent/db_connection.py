@@ -1,13 +1,19 @@
 import os
 
-from sqlalchemy import inspect, text
+from pgvector.psycopg import register_vector_async
+from sqlalchemy import event, inspect, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 DBNAME = "searchagent"
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_async_engine(DATABASE_URL)
-async_session = async_sessionmaker(bind=engine, expire_on_commit=False)
+async_engine = create_async_engine(DATABASE_URL)
+async_session = async_sessionmaker(bind=async_engine, expire_on_commit=False)
+
+
+@event.listens_for(async_engine.sync_engine, "connect")
+def connect(dbapi_connection, connection_record):
+    dbapi_connection.run_async(register_vector_async)
 
 
 # Enable the pgvector extension
@@ -17,7 +23,7 @@ async def enable_pgvector_extension():
 
 
 async def get_table_names():
-    async with engine.connect() as conn:
+    async with async_engine.connect() as conn:
         table_names = await conn.run_sync(
             lambda sync_conn: inspect(sync_conn).get_table_names()
         )
