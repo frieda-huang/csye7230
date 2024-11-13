@@ -30,6 +30,7 @@ class ColPaliRag:
         model_name: Optional[str] = None,
         hf_api_key: Optional[str] = None,
         benchmark: bool = False,
+        refresh: bool = False,
     ):
         """
         A RAG system using a visual language model called Colpali to process PDF files
@@ -53,6 +54,7 @@ class ColPaliRag:
         self.model_name = model_name or "vidore/colpali-v1.2"
         self.hf_api_key = hf_api_key or os.getenv("HF_API_KEY")
         self.benchmark = benchmark
+        self.refresh = refresh
 
         if input_dir:
             self.input_dir = Path(input_dir)
@@ -263,7 +265,11 @@ class ColPaliRag:
 
         embeddings = await asyncio.to_thread(self.embed_images)
 
-        await self.embedding_service.upsert_doc_embeddings(embeddings, self.metadata)
+        if self.benchmark or self.refresh:
+            await self.embedding_service.upsert_doc_embeddings(
+                embeddings, self.metadata
+            )
+
         await self.embedding_service.upsert_query_embeddings(query, query_embeddings)
 
         ctx = SearchContext(SearchStrategyFactory.create_strategy("ANNHNSWHamming"))
