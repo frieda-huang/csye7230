@@ -280,3 +280,48 @@ def calculate_metrics_colpali(
         return wrapper
 
     return decorator
+
+
+def fetch_dataset_column(
+    column_name: str,
+    dataset="vidore/syntheticDocQA_artificial_intelligence_test",
+    dataset_size: Optional[int] = 1000,
+) -> List[int]:
+    ds = fetch_dataset(dataset, dataset_size)
+    return ds[column_name]
+
+
+def recall(actual: List[int], predicted: List[int], k: int) -> float:
+    act_set = set(actual)
+    pred_set = set(predicted[:k])
+    result = round(len(act_set & pred_set) / float(len(act_set)), 2)
+    return result
+
+
+async def average_recall(
+    rag, queries: List[str], actual_pages: List[int], k: int
+) -> float:
+    total_recall = 0
+    for query, page in zip(queries, actual_pages):
+        response = await rag.search(query=query)
+        predicted = [res["page_number"] for res in response]
+        recall_score = recall([page], predicted, k)
+        total_recall += recall_score
+    average_recall = total_recall / len(queries)
+    return average_recall
+
+
+def precision():
+    pass
+
+
+def mrr():
+    pass
+
+
+def map():
+    pass
+
+
+def ndcg():
+    pass
