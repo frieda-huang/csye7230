@@ -18,6 +18,7 @@ from searchagent.colpali.search_engine.context import SearchContext
 from searchagent.colpali.search_engine.strategy_factory import SearchStrategyFactory
 from searchagent.colpali.service import EmbeddingSerivce
 from searchagent.db_connection import async_session
+from searchagent.ragmetrics.metrics import measure_vram
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import BatchFeature, PreTrainedModel
@@ -41,6 +42,7 @@ class ColPaliRag:
             model_name (Optional[str]): Name of a Colpali pretrained model
                 Default is "vidore/colpali-v1.2"
             benchmark (bool): Allow us to benchmark the performance of ColPali RAG system
+            refresh (bool): Flag indicating whether to embed documents
         """
 
         # Lazy loadings
@@ -65,9 +67,6 @@ class ColPaliRag:
         if input_dir and not self.input_dir.is_dir():
             raise ValueError(f"Input directory does not exist: {input_dir}")
 
-        if not input_dir and not benchmark:
-            raise ValueError("input_dir is required if benchmark mode is not on")
-
         if input_dir and benchmark:
             raise ValueError(
                 "Benchmark mode is currently on. We will use ViDoRe dataset instead"
@@ -79,10 +78,15 @@ class ColPaliRag:
             )
 
         if not input_dir and benchmark:
-            self.pdf_processor = PDFImagesProcessor.retrieve_pdfImage_from_vidore()
+            self.pdf_processor = PDFImagesProcessor.retrieve_pdfImage_from_vidore(
+                dataset_size=1000
+            )
 
-        self.images = self.pdf_processor.images_list
-        self.pdf_metadata = self.pdf_processor.pdf_metadata
+        # Only convert PDFs to images and embed them when new docs are available
+        if input_dir or benchmark or refresh:
+            self.images = self.pdf_processor.images_list
+            self.pdf_metadata = self.pdf_processor.pdf_metadata
+
         self.embedding_service = EmbeddingSerivce(
             self.user_id, async_session(), self.input_dir, self.benchmark
         )
@@ -218,10 +222,8 @@ class ColPaliRag:
 
         return embeddings
 
-    # @measure_vram()
+    @measure_vram()
     def embed_images(self) -> List[torch.Tensor]:
-        # TODO: Set up a Cron job to sync files and their embeddings each night
-        # TODO: Dynamically identify which PDF images need to be indexed
         """Embed images using custom Dataset
         Check this link on PyTorch custom Dataset:
         https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
@@ -229,7 +231,7 @@ class ColPaliRag:
         processed_images = PDFImagesDataset(self.images, self.pdf_metadata)
         return self._embed(processed_images, self.image_collate_fn)
 
-    # @measure_vram()
+    @measure_vram()
     def embed_query(self, query: str) -> List[torch.Tensor]:
         return self._embed([query], self.processor.process_queries)
 
@@ -263,9 +265,9 @@ class ColPaliRag:
             for elem in embed.view(dtype=torch.uint16).numpy().view(ml_dtypes.bfloat16)
         ]
 
-        embeddings = await asyncio.to_thread(self.embed_images)
-
         if self.benchmark or self.refresh:
+            embeddings = await asyncio.to_thread(self.embed_images)
+
             await self.embedding_service.upsert_doc_embeddings(
                 embeddings, self.metadata
             )
