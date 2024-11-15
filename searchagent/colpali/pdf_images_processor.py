@@ -79,15 +79,17 @@ class PDFImagesProcessor:
         return cls(input_dir, images_list, pdf_metadata)
 
     @classmethod
+    @measure_latency_for_cpu
+    @measure_ram
     def retrieve_pdfImage_from_vidore(cls, batch_size=4, dataset_size: int = 16):
         """We use this method to benchmark our rag system
 
-        We will use the dataset from https://huggingface.co/datasets/vidore/syntheticDocQA_artificial_intelligence_test
+        We will use the dataset from https://huggingface.co/datasets/vidore/docvqa_test_subsampled
         """
         from datasets import load_dataset
 
         ds = load_dataset(
-            "vidore/syntheticDocQA_artificial_intelligence_test",
+            "vidore/docvqa_test_subsampled",
             split=f"test[:{dataset_size}]",
         )
 

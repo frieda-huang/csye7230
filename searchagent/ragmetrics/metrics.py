@@ -231,7 +231,7 @@ def fetch_dataset(dataset_name: str, dataset_size: Optional[int] = None):
 def calculate_metrics_colpali(
     metrics: List[MetricsType],
     top_k=10,
-    dataset="vidore/syntheticDocQA_artificial_intelligence_test",
+    dataset="vidore/docvqa_test_subsampled",
     dataset_size: Optional[int] = 16,
 ):
     """Evaluate retrieval performance using specified metrics:
@@ -284,8 +284,8 @@ def calculate_metrics_colpali(
 
 def fetch_dataset_column(
     column_name: str,
-    dataset="vidore/syntheticDocQA_artificial_intelligence_test",
-    dataset_size: Optional[int] = 1000,
+    dataset="vidore/docvqa_test_subsampled",
+    dataset_size: Optional[int] = 500,
 ) -> List[int]:
     ds = fetch_dataset(dataset, dataset_size)
     return ds[column_name]
