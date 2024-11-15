@@ -30,7 +30,7 @@ class ColPaliRag:
         input_dir: Optional[Union[Path, str]] = None,
         model_name: Optional[str] = None,
         hf_api_key: Optional[str] = None,
-        benchmark: bool = False,
+        benchmark_embed: bool = False,
         refresh: bool = False,
     ):
         """
@@ -41,7 +41,7 @@ class ColPaliRag:
             input_dir (Optional[Union[Path, str]]): Path to the PDF directory
             model_name (Optional[str]): Name of a Colpali pretrained model
                 Default is "vidore/colpali-v1.2"
-            benchmark (bool): Allow us to benchmark the performance of ColPali RAG system
+            benchmark_embed (bool): Allow us to benchmark the performance of ColPali RAG system on embedding
             refresh (bool): Flag indicating whether to embed documents
         """
 
@@ -55,7 +55,7 @@ class ColPaliRag:
         self.device = get_torch_device()
         self.model_name = model_name or "vidore/colpali-v1.2"
         self.hf_api_key = hf_api_key or os.getenv("HF_API_KEY")
-        self.benchmark = benchmark
+        self.benchmark_embed = benchmark_embed
         self.refresh = refresh
 
         if input_dir:
@@ -67,7 +67,7 @@ class ColPaliRag:
         if input_dir and not self.input_dir.is_dir():
             raise ValueError(f"Input directory does not exist: {input_dir}")
 
-        if input_dir and benchmark:
+        if input_dir and benchmark_embed:
             raise ValueError(
                 "Benchmark mode is currently on. We will use ViDoRe dataset instead"
             )
@@ -77,18 +77,18 @@ class ColPaliRag:
                 str(self.input_dir)
             )
 
-        if not input_dir and benchmark:
+        if not input_dir and benchmark_embed:
             self.pdf_processor = PDFImagesProcessor.retrieve_pdfImage_from_vidore(
-                dataset_size=1000
+                dataset_size=100
             )
 
         # Only convert PDFs to images and embed them when new docs are available
-        if input_dir or benchmark or refresh:
+        if input_dir or benchmark_embed or refresh:
             self.images = self.pdf_processor.images_list
             self.pdf_metadata = self.pdf_processor.pdf_metadata
 
         self.embedding_service = EmbeddingSerivce(
-            self.user_id, async_session(), self.input_dir, self.benchmark
+            self.user_id, async_session(), self.input_dir, self.benchmark_embed
         )
 
     @property
@@ -265,7 +265,7 @@ class ColPaliRag:
             for elem in embed.view(dtype=torch.uint16).numpy().view(ml_dtypes.bfloat16)
         ]
 
-        if self.benchmark or self.refresh:
+        if self.benchmark_embed or self.refresh:
             embeddings = await asyncio.to_thread(self.embed_images)
 
             await self.embedding_service.upsert_doc_embeddings(

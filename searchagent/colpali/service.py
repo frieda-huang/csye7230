@@ -26,12 +26,12 @@ class EmbeddingSerivce:
         user_id: int,
         session: AsyncSession,
         input_dir: Optional[Path],
-        benchmark: bool,
+        benchmark_embed: bool,
     ):
         self.user_id = user_id
         self.session = session
         self.input_dir = input_dir
-        self.benchmark = benchmark
+        self.benchmark_embed = benchmark_embed
 
         self.folder_repository = FolderRepository(Folder, session=session)
         self.file_repository = FileRepository(File, session=session)
@@ -65,7 +65,7 @@ class EmbeddingSerivce:
     async def _get_or_add_folder(self) -> Folder:
         folder_name, folder_path = "", ""
 
-        if not self.benchmark:
+        if not self.benchmark_embed:
             # Benchmark dataset (vidore/syntheticDocQA_artificial_intelligence_test)
             # doesn't have folder_name and folder_path
             folder_name = str(self.input_dir.name)
