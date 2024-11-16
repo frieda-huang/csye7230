@@ -43,6 +43,16 @@ _Latency and memory usage_
 -   top_k = 10
 -   Search and indexing strategy: ExactMaxSim
 
+_Metrics_
+
+```
+{
+    "average_recall": 0.99,
+    "precision": 0.99,
+    "mrr": 0.9670000000000001
+}
+```
+
 ### Implemented Optimization
 
 #### Reduce Index Build Time
