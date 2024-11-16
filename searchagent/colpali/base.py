@@ -78,9 +78,7 @@ class ColPaliRag:
             )
 
         if not input_dir and benchmark_embed:
-            self.pdf_processor = PDFImagesProcessor.retrieve_pdfImage_from_vidore(
-                dataset_size=100
-            )
+            self.pdf_processor = PDFImagesProcessor.retrieve_pdfImage_from_vidore()
 
         # Only convert PDFs to images and embed them when new docs are available
         if input_dir or benchmark_embed or refresh:

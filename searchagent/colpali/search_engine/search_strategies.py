@@ -10,6 +10,12 @@ from searchagent.db_connection import DBNAME
 from searchagent.utils import VectorList
 
 
+def print_row(row: Row):
+    print(
+        f"Filename: {row['filename']}, Page number: {row['page_number']}, File ID: {row['file_id']}"
+    )
+
+
 class SearchStrategy(ABC):
     @abstractmethod
     async def search(self, query_embeddings: VectorList, top_k: int) -> List[Row]:
@@ -52,7 +58,7 @@ class ExactMaxSimSearchStrategy(SearchStrategy):
             result = await r.fetchall()
 
             for row in result:
-                print(row)
+                print_row(row)
 
             return result
 
@@ -101,9 +107,7 @@ class ANNHNSWHammingSearchStrategy(SearchStrategy):
             result = await r.fetchall()
 
             for row in result:
-                print(
-                    f"Filename: {row['filename']}, Page number: {row['page_number']}, File ID: {row['file_id']}"
-                )
+                print_row(row)
 
         return result
 

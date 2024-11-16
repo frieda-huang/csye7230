@@ -16,6 +16,7 @@ from torchmetrics.retrieval import (
 
 ERROR_MSG = "No compatible GPU backend found (CUDA or MPS required)."
 MB_DIVISOR = 1024**2
+DEFAULT_DATASET = "vidore/syntheticDocQA_artificial_intelligence_test"
 
 
 class MetricsType(Enum):
@@ -222,7 +223,9 @@ def generate_indexes_tensor(query_indices: List[int], top_k: int) -> torch.Tenso
 
 
 @lru_cache(maxsize=3)
-def fetch_dataset(dataset_name: str, dataset_size: Optional[int] = None):
+def fetch_dataset(
+    dataset_name: str = DEFAULT_DATASET, dataset_size: Optional[int] = None
+):
     return load_dataset(
         dataset_name, split=f"test[:{dataset_size}]" if dataset_size else "test"
     )
@@ -230,9 +233,9 @@ def fetch_dataset(dataset_name: str, dataset_size: Optional[int] = None):
 
 def calculate_metrics_colpali(
     metrics: List[MetricsType],
-    top_k=10,
-    dataset="vidore/docvqa_test_subsampled",
-    dataset_size: Optional[int] = 16,
+    dataset_size: int,
+    top_k: int,
+    dataset=DEFAULT_DATASET,
 ):
     """Evaluate retrieval performance using specified metrics:
 
@@ -284,14 +287,15 @@ def calculate_metrics_colpali(
 
 def fetch_dataset_column(
     column_name: str,
-    dataset="vidore/docvqa_test_subsampled",
-    dataset_size: Optional[int] = 500,
+    dataset_size: Optional[int],
+    dataset=DEFAULT_DATASET,
 ) -> List[int]:
     ds = fetch_dataset(dataset, dataset_size)
     return ds[column_name]
 
 
 def recall(actual: List[int], predicted: List[int], k: int) -> float:
+    """Measure proportion of relevant documents that are retrieved"""
     act_set = set(actual)
     pred_set = set(predicted[:k])
     result = round(len(act_set & pred_set) / float(len(act_set)), 2)
@@ -301,6 +305,7 @@ def recall(actual: List[int], predicted: List[int], k: int) -> float:
 async def average_recall(
     rag, queries: List[str], actual_pages: List[int], k: int
 ) -> float:
+    """Mean of recall scores across multiple queries"""
     total_recall = 0
     for query, page in zip(queries, actual_pages):
         response = await rag.search(query=query)
@@ -311,17 +316,23 @@ async def average_recall(
     return average_recall
 
 
-def precision():
-    pass
+async def precision(rag, queries: List[str], actual_pages: List[int], k: int):
+    """Measure the proportion of retrieved documents that are relevant"""
+    correct = 0
+    for query, page in zip(queries, actual_pages):
+        response = await rag.search(query=query)
+        predicted = [res["page_number"] for res in response]
+        if page in predicted:
+            correct += 1
+    return correct / len(queries)
 
 
-def mrr():
-    pass
-
-
-def map():
-    pass
-
-
-def ndcg():
-    pass
+async def mrr(rag, queries: List[str], actual_pages: List[int]):
+    """Average the reciprocal ranks of the first relevant document retrieved across multiple queries"""
+    total_rank = 0
+    for query, page in zip(queries, actual_pages):
+        response = await rag.search(query=query)
+        predicted = [res["page_number"] for res in response]
+        rank = 1 / (predicted.index(page) + 1) if page in predicted else 0
+        total_rank += rank
+    return total_rank / len(queries)

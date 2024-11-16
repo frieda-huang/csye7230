@@ -1,6 +1,47 @@
-### Basic House Cleaning
+### Basics
 
 Since HNSW supports incremental indexing, we don’t DROP the index programmatically. As a result, when testing performance, we need to manually DROP the index beforehand to avoid any slowdown due to accumulated data.
+
+### Metrics
+
+**Testing on 100 PDF images from vidore/syntheticDocQA_artificial_intelligence_test**
+
+#### Experiment #1
+
+-   top_k = 10
+-   Search and indexing strategy: ANNHNSWHamming
+
+_Metrics_
+
+```
+{
+    "average_recall": 0.03,
+    "precision": 0.04,
+    "mrr": 0.009999999999999998
+}
+```
+
+_Latency and memory usage_
+
+```
+{
+    "metric": "ram_usage",
+    "function_name": "retrieve_pdfImage_from_vidore",
+    "value": "RAM Usage - Current: 282.27 MB, Peak: 295.14 MB",
+    "custom_msg": null
+}
+{
+    "metric": "cpu_latency",
+    "function_name": "retrieve_pdfImage_from_vidore",
+    "value": "CPU Latency: 32881.650 ms",
+    "custom_msg": null
+}
+```
+
+#### Experiment #2
+
+-   top_k = 10
+-   Search and indexing strategy: ExactMaxSim
 
 ### Implemented Optimization
 

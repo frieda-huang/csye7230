@@ -8,7 +8,11 @@ from pdf2image import convert_from_path
 from PIL import Image
 from searchagent.colpali.schemas import ImageMetadata
 from searchagent.file_system.base import FileSystemManager
-from searchagent.ragmetrics.metrics import measure_latency_for_cpu, measure_ram
+from searchagent.ragmetrics.metrics import (
+    fetch_dataset,
+    measure_latency_for_cpu,
+    measure_ram,
+)
 
 
 class PDFImagesProcessor:
@@ -79,19 +83,16 @@ class PDFImagesProcessor:
         return cls(input_dir, images_list, pdf_metadata)
 
     @classmethod
-    @measure_latency_for_cpu
-    @measure_ram
-    def retrieve_pdfImage_from_vidore(cls, batch_size=4, dataset_size: int = 16):
+    @measure_latency_for_cpu()
+    @measure_ram()
+    def retrieve_pdfImage_from_vidore(
+        cls, dataset_size: Optional[int] = None, batch_size=4
+    ):
         """We use this method to benchmark our rag system
 
-        We will use the dataset from https://huggingface.co/datasets/vidore/docvqa_test_subsampled
+        We will use the dataset from https://huggingface.co/datasets/vidore/syntheticDocQA_artificial_intelligence_test
         """
-        from datasets import load_dataset
-
-        ds = load_dataset(
-            "vidore/docvqa_test_subsampled",
-            split=f"test[:{dataset_size}]",
-        )
+        ds = fetch_dataset(dataset_size=dataset_size)
 
         image_list = [[image] for image in ds["image"]]
         pdf_metadata: Dict[str, List[ImageMetadata]] = {}
