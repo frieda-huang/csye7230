@@ -50,7 +50,9 @@ class ExactMaxSimSearchStrategy(SearchStrategy):
         ORDER BY
             tp.max_sim DESC;
         """
-        conn = await psycopg.AsyncConnection.connect(dbname=DBNAME, autocommit=True)
+        conn = await psycopg.AsyncConnection.connect(
+            dbname=DBNAME, autocommit=True, row_factory=dict_row
+        )
 
         async with conn:
             await register_vector_async(conn)
