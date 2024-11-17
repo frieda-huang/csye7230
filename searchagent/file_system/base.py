@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Generator, List, Optional
 
 import magic
-import textract
 from pydantic import BaseModel, field_validator
 from searchagent.file_system.models import FileInfo, Page, Metadata
 from searchagent.utils import timer
@@ -184,7 +183,3 @@ class FileSystemManager:
             Page(number=i + 1, content=rpages[i].extract_text())
             for i in range(len(rpages))
         ]
-
-    def extract_text_from_docx(self, filepath: str) -> List[Page]:
-        content = textract.process(filepath, extension="docx")
-        return [Page(1, content=content)]
