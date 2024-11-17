@@ -1,4 +1,6 @@
-from searchagent.colpali.search_engine.indexing_strategies import HNSWIndexing
+from searchagent.colpali.search_engine.indexing_strategies import (
+    HNSWIndexingBinaryQuantizationHammingDistance,
+)
 from searchagent.colpali.search_engine.search_strategies import (
     ANNHNSWHammingSearchStrategy,
     ANNIVFFlatEuclideanSearchStrategy,
@@ -24,4 +26,6 @@ SearchStrategyFactory.register_strategy(
     ANNIVFFlatEuclideanSearchStrategy,
 )
 
-IndexingStrategyFactory.register_strategy("HNSW", HNSWIndexing)
+IndexingStrategyFactory.register_strategy(
+    "HNSW", HNSWIndexingBinaryQuantizationHammingDistance
+)

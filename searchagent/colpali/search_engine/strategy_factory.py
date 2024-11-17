@@ -1,4 +1,6 @@
-from searchagent.colpali.search_engine.indexing_strategies import HNSWIndexing
+from searchagent.colpali.search_engine.indexing_strategies import (
+    HNSWIndexingBinaryQuantizationHammingDistance,
+)
 from searchagent.colpali.search_engine.search_strategies import SearchStrategy
 
 
@@ -26,7 +28,9 @@ class IndexingStrategyFactory:
         cls._indexing_strategies[name] = indexing_strategy_cls
 
     @classmethod
-    def create_strategy(cls, name: str) -> HNSWIndexing:
+    def create_strategy(
+        cls, name: str
+    ) -> HNSWIndexingBinaryQuantizationHammingDistance:
         indexing_strategy_cls = cls._indexing_strategies.get(name)
         if not indexing_strategy_cls:
             raise ValueError(f"Unsupported indexing strategy: {name}")
