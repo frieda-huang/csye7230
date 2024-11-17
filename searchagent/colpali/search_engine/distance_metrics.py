@@ -15,9 +15,6 @@ class DistanceMetric(ABC):
 
 class HammingDistance(DistanceMetric):
     def calculate(self):
-        SQL_DROP_FUNC = """
-        DROP FUNCTION IF EXISTS hamming(halfvec[]);
-        """
         SQL_HAMMING_FUNC = f"""
         CREATE OR REPLACE FUNCTION hamming(query halfvec[])
         RETURNS TABLE (
@@ -46,13 +43,32 @@ class HammingDistance(DistanceMetric):
         """
         with psycopg.connect(dbname=DBNAME, autocommit=True) as conn:
             register_vector(conn)
-            conn.execute(SQL_DROP_FUNC)
             conn.execute(SQL_HAMMING_FUNC)
 
 
 class CosineSimilarity(DistanceMetric):
-    def calculate():
-        pass
+    def calculate(self):
+        SQL_COSINE_SIMILARITY = """
+        CREATE OR REPLACE FUNCTION cosine_similarity(document halfvec[], query halfvec[])
+        RETURNS double precision AS $$
+            WITH queries AS (
+                SELECT row_number() OVER () AS query_number, *
+                FROM (SELECT unnest(query) AS query)
+            ),
+            documents AS (
+                SELECT unnest(document) AS document
+            ),
+            similarities AS (
+                SELECT query_number, 1 - (document <=> query) AS similarity
+                FROM queries CROSS JOIN documents
+            )
+            SELECT SUM(similarity)
+            FROM similarities
+        $$ LANGUAGE SQL
+        """
+        with psycopg.connect(dbname=DBNAME, autocommit=True) as conn:
+            register_vector(conn)
+            conn.execute(SQL_COSINE_SIMILARITY)
 
 
 class EuclideanDistance(DistanceMetric):

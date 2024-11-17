@@ -31,7 +31,7 @@ class HNSWIndexingBinaryQuantizationHammingDistance(IndexingStrategy):
 class HNSWIndexingCosineSimilarity(IndexingStrategy):
     async def build_index(self):
         SQL_INDEXING = f"""CREATE INDEX ON flattened_embedding
-        USING hnsw ((embedding::halfvec({VECT_DIM})) vector_cosine_ops);
+        USING hnsw ((vector_embedding::halfvec({VECT_DIM})) halfvec_cosine_ops);
         """
 
         conn = await psycopg.AsyncConnection.connect(dbname=DBNAME, autocommit=True)

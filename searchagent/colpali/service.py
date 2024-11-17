@@ -128,5 +128,7 @@ class EmbeddingSerivce:
         """Update database statistics and execute indexing"""
         await execute_analyze()
 
-        ctx = IndexingContext(IndexingStrategyFactory.create_strategy("HNSW"))
+        ctx = IndexingContext(
+            IndexingStrategyFactory.create_strategy("HNSWCosineSimilarity")
+        )
         await ctx.execute_indexing_strategy()

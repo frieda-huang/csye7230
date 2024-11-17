@@ -1,14 +1,16 @@
 from searchagent.colpali.search_engine.indexing_strategies import (
     HNSWIndexingBinaryQuantizationHammingDistance,
+    HNSWIndexingCosineSimilarity,
 )
 from searchagent.colpali.search_engine.search_strategies import (
+    ANNHNSWCosineSimilaritySearchStrategy,
     ANNHNSWHammingSearchStrategy,
     ANNIVFFlatEuclideanSearchStrategy,
     ExactMaxSimSearchStrategy,
 )
 from searchagent.colpali.search_engine.strategy_factory import (
-    SearchStrategyFactory,
     IndexingStrategyFactory,
+    SearchStrategyFactory,
 )
 
 SearchStrategyFactory.register_strategy(
@@ -22,10 +24,19 @@ SearchStrategyFactory.register_strategy(
 )
 
 SearchStrategyFactory.register_strategy(
+    "ANNHNSWCosineSimilarity",
+    ANNHNSWCosineSimilaritySearchStrategy,
+)
+
+SearchStrategyFactory.register_strategy(
     "ANNIVFFlatEuclidean",
     ANNIVFFlatEuclideanSearchStrategy,
 )
 
 IndexingStrategyFactory.register_strategy(
-    "HNSW", HNSWIndexingBinaryQuantizationHammingDistance
+    "HNSWBQHamming", HNSWIndexingBinaryQuantizationHammingDistance
+)
+
+IndexingStrategyFactory.register_strategy(
+    "HNSWCosineSimilarity", HNSWIndexingCosineSimilarity
 )

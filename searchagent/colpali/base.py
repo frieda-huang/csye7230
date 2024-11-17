@@ -263,7 +263,7 @@ class ColPaliRag:
             for elem in embed.view(dtype=torch.uint16).numpy().view(ml_dtypes.bfloat16)
         ]
 
-        if self.benchmark_embed or self.refresh:
+        if self.benchmark_embed or self.refresh or self.input_dir:
             embeddings = await asyncio.to_thread(self.embed_images)
 
             await self.embedding_service.upsert_doc_embeddings(

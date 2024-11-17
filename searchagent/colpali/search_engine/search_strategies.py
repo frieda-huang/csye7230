@@ -5,7 +5,11 @@ import psycopg
 from pgvector.psycopg import register_vector_async
 from psycopg.cursor import Row
 from psycopg.rows import dict_row
-from searchagent.colpali.search_engine.distance_metrics import HammingDistance, MaxSim
+from searchagent.colpali.search_engine.distance_metrics import (
+    CosineSimilarity,
+    HammingDistance,
+    MaxSim,
+)
 from searchagent.db_connection import DBNAME
 from searchagent.utils import VectorList
 
@@ -106,6 +110,48 @@ class ANNHNSWHammingSearchStrategy(SearchStrategy):
         async with conn:
             await register_vector_async(conn)
             r = await conn.execute(SQL_RERANK, (query_embeddings,))
+            result = await r.fetchall()
+
+            for row in result:
+                print_row(row)
+
+        return result
+
+
+class ANNHNSWCosineSimilaritySearchStrategy(SearchStrategy):
+    async def search(self, query_embeddings: VectorList, top_k: int) -> List[Row]:
+        cosine_similarity = CosineSimilarity()
+        cosine_similarity.calculate()
+
+        SQL = f"""
+        WITH top_pages AS (
+            SELECT
+                e.page_id, cosine_similarity(e.vector_embedding, %s) AS cosine_similarity
+            FROM
+                embedding e
+            ORDER BY
+                cosine_similarity DESC
+            LIMIT {top_k}
+        )
+        SELECT
+            p.page_number,
+            p.file_id,
+            f.*
+        FROM
+            top_pages tp
+        JOIN
+            page p ON p.id = tp.page_id
+        JOIN
+            file f ON f.id = p.file_id
+        ORDER BY
+            tp.cosine_similarity DESC;
+        """
+        conn = await psycopg.AsyncConnection.connect(
+            dbname=DBNAME, autocommit=True, row_factory=dict_row
+        )
+        async with conn:
+            await register_vector_async(conn)
+            r = await conn.execute(SQL, (query_embeddings,))
             result = await r.fetchall()
 
             for row in result:
