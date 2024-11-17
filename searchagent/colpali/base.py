@@ -1,5 +1,4 @@
 import asyncio
-import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -17,6 +16,7 @@ from searchagent.colpali.schemas import ImageMetadata
 from searchagent.colpali.search_engine.context import SearchContext
 from searchagent.colpali.search_engine.strategy_factory import SearchStrategyFactory
 from searchagent.colpali.service import EmbeddingSerivce
+from searchagent.config import settings
 from searchagent.db_connection import async_session
 from searchagent.ragmetrics.metrics import measure_vram
 from torch.utils.data import DataLoader
@@ -28,8 +28,6 @@ class ColPaliRag:
     def __init__(
         self,
         input_dir: Optional[Union[Path, str]] = None,
-        model_name: Optional[str] = None,
-        hf_api_key: Optional[str] = None,
         benchmark_embed: bool = False,
         refresh: bool = False,
     ):
@@ -37,10 +35,7 @@ class ColPaliRag:
         A RAG system using a visual language model called Colpali to process PDF files
 
         Args:
-            query (str): search query
             input_dir (Optional[Union[Path, str]]): Path to the PDF directory
-            model_name (Optional[str]): Name of a Colpali pretrained model
-                Default is "vidore/colpali-v1.2"
             benchmark_embed (bool): Allow us to benchmark the performance of ColPali RAG system on embedding
             refresh (bool): Flag indicating whether to embed documents
         """
@@ -53,8 +48,8 @@ class ColPaliRag:
         self.input_dir = None
 
         self.device = get_torch_device()
-        self.model_name = model_name or "vidore/colpali-v1.2"
-        self.hf_api_key = hf_api_key or os.getenv("HF_API_KEY")
+        self.model_name = settings.model_name
+        self.hf_api_key = settings.hf_api_key
         self.benchmark_embed = benchmark_embed
         self.refresh = refresh
 
@@ -272,5 +267,7 @@ class ColPaliRag:
 
         await self.embedding_service.upsert_query_embeddings(query, query_embeddings)
 
-        ctx = SearchContext(SearchStrategyFactory.create_strategy("ANNHNSWHamming"))
+        ctx = SearchContext(
+            SearchStrategyFactory.create_strategy("ANNHNSWCosineSimilarity")
+        )
         return await ctx.execute_search_strategy(query_embeddings, top_k)

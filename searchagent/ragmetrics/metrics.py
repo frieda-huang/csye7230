@@ -6,6 +6,7 @@ from typing import List, Optional
 
 import torch
 from datasets import load_dataset
+from searchagent.config import settings
 from searchagent.ragmetrics.performance_logger import PerformanceLogger
 from torchmetrics.retrieval import (
     RetrievalMAP,
@@ -16,7 +17,6 @@ from torchmetrics.retrieval import (
 
 ERROR_MSG = "No compatible GPU backend found (CUDA or MPS required)."
 MB_DIVISOR = 1024**2
-DEFAULT_DATASET = "vidore/syntheticDocQA_artificial_intelligence_test"
 
 
 class MetricsType(Enum):
@@ -223,11 +223,10 @@ def generate_indexes_tensor(query_indices: List[int], top_k: int) -> torch.Tenso
 
 
 @lru_cache(maxsize=3)
-def fetch_dataset(
-    dataset_name: str = DEFAULT_DATASET, dataset_size: Optional[int] = None
-):
+def fetch_dataset(dataset_size: Optional[int] = None):
     return load_dataset(
-        dataset_name, split=f"test[:{dataset_size}]" if dataset_size else "test"
+        settings.benchmark_dataset_name,
+        split=f"test[:{dataset_size}]" if dataset_size else "test",
     )
 
 
@@ -235,7 +234,6 @@ def calculate_metrics_colpali(
     metrics: List[MetricsType],
     dataset_size: int,
     top_k: int,
-    dataset=DEFAULT_DATASET,
 ):
     """Evaluate retrieval performance using specified metrics:
 
@@ -254,7 +252,7 @@ def calculate_metrics_colpali(
         Loads the entire dataset if set to None
     """
 
-    ds = fetch_dataset(dataset, dataset_size)
+    ds = fetch_dataset(dataset_size)
 
     def decorator(func):
         @wraps(func)
@@ -288,9 +286,8 @@ def calculate_metrics_colpali(
 def fetch_dataset_column(
     column_name: str,
     dataset_size: Optional[int],
-    dataset=DEFAULT_DATASET,
 ) -> List[int]:
-    ds = fetch_dataset(dataset, dataset_size)
+    ds = fetch_dataset(dataset_size)
     return ds[column_name]
 
 
