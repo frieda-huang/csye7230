@@ -41,7 +41,7 @@ _Latency and memory usage_
 #### Experiment #2
 
 -   top_k = 10
--   Search and indexing strategy: ExactMaxSim
+-   Search strategy: ExactMaxSim
 
 _Metrics_
 
@@ -50,6 +50,38 @@ _Metrics_
     "average_recall": 0.99,
     "precision": 0.99,
     "mrr": 0.9670000000000001
+}
+```
+
+#### Experiment #3
+
+-   top_k = 10
+-   Search and indexing strategy: ANNHNSWCosineSimilarity
+
+_Metrics_
+
+```
+{
+    "average_recall": 0.81,
+    "precision": 0.81,
+    "mrr": 0.6003174603174605
+}
+```
+
+_Latency and memory usage_
+
+```
+{
+    "metric": "ram_usage",
+    "function_name": "convert_pdf2image_from_dir",
+    "value": "RAM Usage - Current: 0.86 MB, Peak: 0.89 MB",
+    "custom_msg": null
+},
+{
+    "metric": "cpu_latency",
+    "function_name": "convert_pdf2image_from_dir",
+    "value": "CPU Latency: 643.443 ms",
+    "custom_msg": null
 }
 ```
 

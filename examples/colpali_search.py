@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from loguru import logger
 from searchagent.colpali.base import ColPaliRag
 from searchagent.db_connection import enable_pgvector_extension
 from searchagent.ragmetrics.metrics import (
@@ -29,9 +30,9 @@ _ = rag.processor
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await enable_pgvector_extension()
-    print("Starting up")
+    logger.info("Starting up")
     yield
-    print("Shutting down")
+    logger.info("Shutting down")
 
 
 app = FastAPI(lifespan=lifespan)
