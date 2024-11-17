@@ -316,7 +316,7 @@ async def average_recall(
     return average_recall
 
 
-async def precision(rag, queries: List[str], actual_pages: List[int], k: int):
+async def precision(rag, queries: List[str], actual_pages: List[int]):
     """Measure the proportion of retrieved documents that are relevant"""
     correct = 0
     for query, page in zip(queries, actual_pages):

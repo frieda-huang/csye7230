@@ -51,7 +51,7 @@ async def search(query: str):
 @app.post("/benchmark")
 async def benchmark(top_k: int):
     average_recall_score = await average_recall(rag, queries, actual_pages, top_k)
-    precision_score = await precision(rag, queries, actual_pages, top_k)
+    precision_score = await precision(rag, queries, actual_pages)
     mrr_score = await mrr(rag, queries, actual_pages)
 
     return {
