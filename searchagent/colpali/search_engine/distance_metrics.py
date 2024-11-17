@@ -71,11 +71,6 @@ class CosineSimilarity(DistanceMetric):
             conn.execute(SQL_COSINE_SIMILARITY)
 
 
-class EuclideanDistance(DistanceMetric):
-    def calculate():
-        pass
-
-
 class MaxSim(DistanceMetric):
     def calculate(self):
         """Based on

@@ -159,10 +159,3 @@ class ANNHNSWCosineSimilaritySearchStrategy(SearchStrategy):
                 log_row(row)
 
         return result
-
-
-class ANNIVFFlatEuclideanSearchStrategy(SearchStrategy):
-    """Use IVFFlat with l2 distance"""
-
-    async def search(self, query_embeddings: VectorList, top_k: int) -> List[Row]:
-        pass

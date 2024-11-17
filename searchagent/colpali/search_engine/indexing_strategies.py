@@ -39,8 +39,3 @@ class HNSWIndexingCosineSimilarity(IndexingStrategy):
         async with conn:
             await register_vector_async(conn)
             await conn.execute(SQL_INDEXING)
-
-
-class IVFFlatIndexing(IndexingStrategy):
-    async def build_index(self):
-        pass
