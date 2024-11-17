@@ -3,6 +3,7 @@ from typing import List, Optional
 
 import numpy as np
 import torch
+from loguru import logger
 from searchagent.colpali.repositories.all import (
     EmbeddingRepository,
     FileRepository,
@@ -45,6 +46,7 @@ class EmbeddingSerivce:
     async def upsert_doc_embeddings(
         self, embeddings: List[torch.Tensor], metadata: List[ImageMetadata]
     ):
+        logger.info("Initiating the upsert process for document embeddings...")
         chunk_size = 500
         embed_len = len(embeddings)
 
@@ -56,6 +58,9 @@ class EmbeddingSerivce:
                 await self._process_chunk(embeddings_chunk, metadata_chunk)
 
         await self._finalize_operations()
+        logger.info(
+            "Successfully completed the upsert process for all document embeddings."
+        )
 
     async def upsert_query_embeddings(
         self, query: str, query_embeddings: List[VectorList]
@@ -71,6 +76,8 @@ class EmbeddingSerivce:
             folder_name = str(self.input_dir.name)
             folder_path = str(self.input_dir)
 
+        logger.info(f"Getting or adding folder: {folder_name}")
+
         folder = await self.folder_repository.get_by_folder_path(folder_path)
 
         if not folder:
@@ -81,6 +88,8 @@ class EmbeddingSerivce:
 
     async def _get_or_add_file(self, folder: Folder, metadata: ImageMetadata) -> File:
         filepath, filename = metadata.filepath, metadata.filename
+
+        logger.info(f"Getting or adding file: {filename}")
 
         file = await self.file_repository.get_by_filepath_filename(filepath, filename)
 

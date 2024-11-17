@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 import psycopg
+from loguru import logger
 from pgvector.psycopg import register_vector_async
 from psycopg.cursor import Row
 from psycopg.rows import dict_row
@@ -14,8 +15,8 @@ from searchagent.db_connection import DBNAME
 from searchagent.utils import VectorList
 
 
-def print_row(row: Row):
-    print(
+def log_row(row: Row):
+    logger.info(
         f"Filename: {row['filename']}, Page number: {row['page_number']}, File ID: {row['file_id']}"
     )
 
@@ -64,7 +65,7 @@ class ExactMaxSimSearchStrategy(SearchStrategy):
             result = await r.fetchall()
 
             for row in result:
-                print_row(row)
+                log_row(row)
 
             return result
 
@@ -113,7 +114,7 @@ class ANNHNSWHammingSearchStrategy(SearchStrategy):
             result = await r.fetchall()
 
             for row in result:
-                print_row(row)
+                log_row(row)
 
         return result
 
@@ -155,7 +156,7 @@ class ANNHNSWCosineSimilaritySearchStrategy(SearchStrategy):
             result = await r.fetchall()
 
             for row in result:
-                print_row(row)
+                log_row(row)
 
         return result
 

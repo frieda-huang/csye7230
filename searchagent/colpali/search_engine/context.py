@@ -4,6 +4,7 @@ from psycopg.cursor import Row
 from searchagent.colpali.search_engine.indexing_strategies import IndexingStrategy
 from searchagent.colpali.search_engine.search_strategies import SearchStrategy
 from searchagent.utils import VectorList
+from loguru import logger
 
 
 class SearchContext:
@@ -33,4 +34,5 @@ class IndexingContext:
         self._strategy = strategy
 
     async def execute_indexing_strategy(self):
+        logger.info("Building index...")
         return await self._strategy.build_index()

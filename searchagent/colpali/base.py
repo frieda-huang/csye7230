@@ -22,6 +22,7 @@ from searchagent.ragmetrics.metrics import measure_vram
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import BatchFeature, PreTrainedModel
+from loguru import logger
 
 
 class ColPaliRag:
@@ -68,6 +69,7 @@ class ColPaliRag:
             )
 
         if input_dir:
+            logger.info("Converting PDFs to images...")
             self.pdf_processor = PDFImagesProcessor.convert_pdf2image_from_dir(
                 str(self.input_dir)
             )

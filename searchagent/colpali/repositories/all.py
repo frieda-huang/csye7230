@@ -1,5 +1,6 @@
 from typing import List
 
+from loguru import logger
 from searchagent.colpali.repositories.repository import Repository
 from searchagent.models import Embedding, File, FlattenedEmbedding, Folder, Page, Query
 from searchagent.utils import VectorList, get_now
@@ -85,6 +86,7 @@ class EmbeddingRepository(Repository[Embedding]):
     async def add_or_replace(
         self, vector_embedding: VectorList, page: Page
     ) -> Embedding:
+        logger.info(f"Adding or replacing embeddings for file: {page.file.filename}")
         existing_embedding = await self.get_by_page(page)
 
         if existing_embedding:
