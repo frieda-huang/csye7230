@@ -48,7 +48,7 @@ class ColPaliRag:
         self.input_dir = None
 
         self.device = get_torch_device()
-        self.model_name = settings.model_name
+        self.model_name = settings.colpali_model_name
         self.hf_api_key = settings.hf_api_key
         self.benchmark_embed = benchmark_embed
         self.refresh = refresh
