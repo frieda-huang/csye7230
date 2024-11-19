@@ -1,7 +1,7 @@
 from itertools import chain
 from typing import Dict, List, Tuple
 
-from colpali_search.schemas import ImageMetadata
+from colpali_search.schemas.internal.pdf import ImageMetadata
 from PIL import Image
 from torch.utils.data import Dataset
 

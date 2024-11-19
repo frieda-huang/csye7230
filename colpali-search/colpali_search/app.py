@@ -1,9 +1,15 @@
 import asyncio
 
-from colpali_search.services.embedding_service import EmbeddingSerivce
-from colpali_search.services.model_service import ColPaliModelService
-from colpali_search.services.search_service import SearchService
-from fastapi import APIRouter, FastAPI, HTTPException
+from colpali_search.database import async_session
+from colpali_search.dependencies import (
+    get_embedding_service,
+    get_model_service,
+    get_search_service,
+)
+from colpali_search.models import User
+from colpali_search.schemas.endpoints.search import SearchRequest
+from fastapi import APIRouter, Depends, FastAPI, HTTPException
+from sqlalchemy import select
 
 from .routers import embeddings, files, index
 
@@ -41,6 +47,16 @@ You will be able to:
 """
 
 
+async def get_current_user(email: str = "searchagent@gmail.com") -> int:
+    async with async_session.begin() as session:
+        stmt = select(User).where(User.email == email)
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user.id
+
+
 app = FastAPI(
     title="ColPali Search",
     description=description,
@@ -60,18 +76,24 @@ api_v1_router.include_router(index.index_router)
 
 
 @api_v1_router.post("/search/{query}")
-async def search(query: str, top_k: int):
+async def search(
+    body: SearchRequest,
+    user_id: int = Depends(get_current_user),
+    embedding_service=Depends(get_embedding_service),
+    search_service=Depends(get_search_service),
+    model_service=Depends(get_model_service),
+):
     # Run similarity search over the page embeddings for all the pages in the collection
     # top_indices has the shape of
     # tensor([[12,  0, 14],
     # [15, 14, 11]])
-    try:
-        model_service = ColPaliModelService()
-        embedding_service = EmbeddingSerivce()
-        search_service = SearchService()
+    query, top_k = body.query, body.top_k
 
+    try:
         query_embeddings = await asyncio.to_thread(model_service.embed_query, query)
-        await embedding_service.upsert_query_embeddings(query, query_embeddings)
+        await embedding_service.upsert_query_embeddings(
+            user_id, query, query_embeddings
+        )
 
         result = search_service.search(query_embeddings, top_k)
 

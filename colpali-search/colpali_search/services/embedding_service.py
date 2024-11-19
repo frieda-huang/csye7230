@@ -11,12 +11,12 @@ from colpali_search.repository.repositories import (
     PageRepository,
     QueryRepository,
 )
-from colpali_search.schemas import ImageMetadata
+from colpali_search.schemas.internal.pdf import ImageMetadata
 from colpali_search.services.search_engine.context import IndexingContext
 from colpali_search.services.search_engine.strategy_factory import (
     IndexingStrategyFactory,
 )
-from colpali_search.utils import VectorList
+from colpali_search.types import VectorList
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,10 +24,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 class EmbeddingSerivce:
     def __init__(
         self,
-        user_id: int,
         session: AsyncSession,
     ):
-        self.user_id = user_id
         self.session = session
 
         self.file_repository = FileRepository(File, session=session)
@@ -58,9 +56,9 @@ class EmbeddingSerivce:
         )
 
     async def upsert_query_embeddings(
-        self, query: str, query_embeddings: List[VectorList]
+        self, user_id: int, query: str, query_embeddings: List[VectorList]
     ):
-        await self.query_repository.add(query, query_embeddings, self.user_id)
+        await self.query_repository.add(query, query_embeddings, user_id)
 
     async def _get_or_add_file(self, metadata: ImageMetadata) -> File:
         filepath, filename = metadata.filepath, metadata.filename

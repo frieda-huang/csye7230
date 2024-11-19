@@ -21,6 +21,9 @@ ml-dtypes = "^0.5.0"
 watchdog = "^5.0.3"
 pydantic = "^2.9.2"
 pydantic-settings = "^2.6.1"
+fastapi = {extras = ["standard"], version = "^0.115.5"}
+fastapi-cli = "^0.0.5"
+greenlet = "^3.1.1"
 
 
 [build-system]

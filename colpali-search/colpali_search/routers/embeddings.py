@@ -1,5 +1,13 @@
 from typing import List
 
+from colpali_search.dependencies import (
+    get_embedding_service,
+    get_model_service,
+    get_pdf_conversion_service,
+)
+from colpali_search.services.embedding_service import EmbeddingSerivce
+from colpali_search.services.model_service import ColPaliModelService
+from colpali_search.services.pdf_conversion_service import PDFConversionService
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
 embeddings_router = APIRouter(prefix="/embeddings", tags=["embeddings"])
@@ -17,8 +25,22 @@ async def validate_file_type(file: UploadFile) -> UploadFile:
 
 
 @embeddings_router.post("/file")
-async def generate_embeddings_for_file(file: UploadFile = Depends(validate_file_type)):
-    return {"filename": file.filename, "file_type": file.content_type}
+async def generate_embeddings_for_file(
+    pdf_file: UploadFile = Depends(validate_file_type),
+    model_service: ColPaliModelService = Depends(get_model_service),
+    embedding_service: EmbeddingSerivce = Depends(get_embedding_service),
+    pdf_conversion_service: PDFConversionService = Depends(get_pdf_conversion_service),
+):
+    result = pdf_conversion_service.convert_pdfs2image([pdf_file])
+
+    embeddings = model_service.embed_images(result.images_list, result.pdf_metadata)
+
+    metadata = list(result.pdf_metadata.values())
+    mdata = []
+    mdata.extend(metadata)
+    embedding_service.upsert_doc_embeddings(embeddings=embeddings, metadata=mdata)
+
+    return {"filename": pdf_file.filename, "file_type": pdf_file.content_type}
 
 
 @embeddings_router.post("/files")

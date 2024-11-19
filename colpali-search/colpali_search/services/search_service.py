@@ -1,6 +1,6 @@
 from colpali_search.services.search_engine.context import SearchContext
 from colpali_search.services.search_engine.strategy_factory import SearchStrategyFactory
-from colpali_search.utils import QueryEmbeddingList
+from colpali_search.types import QueryEmbeddingList
 
 
 class SearchService:

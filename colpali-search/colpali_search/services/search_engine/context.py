@@ -2,7 +2,7 @@ from typing import List
 
 from colpali_search.services.search_engine.indexing_strategies import IndexingStrategy
 from colpali_search.services.search_engine.search_strategies import SearchStrategy
-from colpali_search.utils import VectorList
+from colpali_search.types import VectorList
 from loguru import logger
 from psycopg.cursor import Row
 

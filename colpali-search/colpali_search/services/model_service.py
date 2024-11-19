@@ -7,10 +7,8 @@ from colpali_engine.models import ColPali
 from colpali_engine.models.paligemma.colpali.processing_colpali import ColPaliProcessor
 from colpali_engine.utils.torch_utils import ListDataset, get_torch_device
 from colpali_search.config import settings
-from colpali_search.schemas import ImageMetadata
-from colpali_search.services.pdf_conversion_service import PDFConversionService
+from colpali_search.schemas.internal.pdf import ImageList, ImageMetadata, PDFMetadata
 from colpali_search.services.pdf_images_dataset import PDFImagesDataset
-from fastapi import UploadFile
 from numpy.typing import NDArray
 from PIL import Image
 from torch.utils.data import DataLoader
@@ -25,8 +23,6 @@ class ColPaliModelService:
         # Lazy loadings
         self._model = None
         self._processor: Optional[ColPaliProcessor] = None
-        self.user_id = 1  # Replace with actual user ID
-
         self.device = get_torch_device()
         self.model_name = settings.colpali_model_name
         self.hf_api_key = settings.hf_api_key
@@ -163,16 +159,13 @@ class ColPaliModelService:
 
         return embeddings
 
-    def embed_images(self, pdf_files: List[UploadFile]) -> List[torch.Tensor]:
+    def embed_images(
+        self, images: ImageList, pdf_metadata: PDFMetadata
+    ) -> List[torch.Tensor]:
         """Embed images using custom Dataset
         Check this link on PyTorch custom Dataset:
         https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
         """
-
-        pdf_conversion_service = PDFConversionService.convert_pdfs2image(pdf_files)
-
-        images = pdf_conversion_service.images_list
-        pdf_metadata = pdf_conversion_service.pdf_metadata
 
         processed_images = PDFImagesDataset(images, pdf_metadata)
         return self._embed(processed_images, self.image_collate_fn)

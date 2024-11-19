@@ -15,8 +15,8 @@ class Repository[T](ABC):
             return obj.all()
 
     async def delete(self, t: T) -> None:
-        delete_stm = delete(T).where(T.id == t.id)
-        await self.session.execute(delete_stm)
+        delete_stmt = delete(T).where(T.id == t.id)
+        await self.session.execute(delete_stmt)
 
     @abstractmethod
     async def add(self, **kwargs: object) -> T:
