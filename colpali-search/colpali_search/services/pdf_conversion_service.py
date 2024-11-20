@@ -5,8 +5,9 @@ from itertools import islice
 from typing import List
 
 from colpali_search.schemas.internal.pdf import (
+    ImageList,
     ImageMetadata,
-    PDFMetadata,
+    MetadataList,
     PDFsConversion,
     SinglePDFConversion,
 )
@@ -47,17 +48,17 @@ class PDFConversionService:
     def convert_pdfs2image(
         self, pdf_files: List[UploadFile], batch_size=4
     ) -> PDFsConversion:
-        images_list = []
-        pdf_metadata: PDFMetadata = {}
+        images_list: ImageList = []
+        metadata_list: MetadataList = []
 
         def process_batch(batch):
             for pdf_file in batch:
                 result = self.convert_single_pdf2image(pdf_file)
                 images_list.append(result.single_pdf_images)
-                pdf_metadata[result.pdf_id] = result.metadata
+                metadata_list.append(result.metadata)
 
         it = iter(pdf_files)
         while batch := list(islice(it, batch_size)):
             process_batch(batch)
 
-        return PDFsConversion(images_list=images_list, pdf_metadata=pdf_metadata)
+        return PDFsConversion(images_list=images_list, pdf_metadata=metadata_list)

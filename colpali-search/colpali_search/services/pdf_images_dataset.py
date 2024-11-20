@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 from colpali_search.schemas.internal.pdf import ImageMetadata
 from PIL import Image
@@ -10,10 +10,10 @@ class PDFImagesDataset(Dataset):
     def __init__(
         self,
         images: List[List[Image.Image]],
-        pdf_metadata: Dict[str, List[ImageMetadata]],
+        metadata: List[List[ImageMetadata]],
     ):
         self.images = images
-        self.pdf_metadata = pdf_metadata
+        self.metadata = metadata
         self.flat_images_metadata = self.flatten_images_metadata()
 
     def __len__(self):
@@ -21,7 +21,7 @@ class PDFImagesDataset(Dataset):
 
     def flatten_images_metadata(self) -> List[Tuple[Image.Image, ImageMetadata]]:
         flattened_images = list(chain.from_iterable(self.images))
-        flattened_metadata = list(chain.from_iterable(self.pdf_metadata.values()))
+        flattened_metadata = list(chain.from_iterable(self.metadata))
 
         assert len(flattened_images) == len(flattened_metadata)
 

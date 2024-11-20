@@ -7,7 +7,7 @@ from colpali_engine.models import ColPali
 from colpali_engine.models.paligemma.colpali.processing_colpali import ColPaliProcessor
 from colpali_engine.utils.torch_utils import ListDataset, get_torch_device
 from colpali_search.config import settings
-from colpali_search.schemas.internal.pdf import ImageList, ImageMetadata, PDFMetadata
+from colpali_search.schemas.internal.pdf import ImageList, ImageMetadata, MetadataList
 from colpali_search.services.pdf_images_dataset import PDFImagesDataset
 from numpy.typing import NDArray
 from PIL import Image
@@ -134,15 +134,14 @@ class ColPaliModelService:
             )
 
         empty_lists = [[] for _ in range(2)]
-        embeddings, mdata = empty_lists
+        embeddings, _ = empty_lists
 
         dataloader = self._create_dataloader(dataset, process_fn)
 
         for batch in tqdm(dataloader):
             if isinstance(dataset, PDFImagesDataset):
-                batch_images, metadata = batch
+                batch_images, _ = batch
                 batches = {k: v.to(self.device) for k, v in batch_images.items()}
-                mdata.extend(metadata)
             else:
                 batches = {k: v.to(self.device) for k, v in batch.items()}
 
@@ -159,7 +158,7 @@ class ColPaliModelService:
         return embeddings
 
     def embed_images(
-        self, images: ImageList, pdf_metadata: PDFMetadata
+        self, images: ImageList, pdf_metadata: MetadataList
     ) -> List[torch.Tensor]:
         """Embed images using custom Dataset
         Check this link on PyTorch custom Dataset:

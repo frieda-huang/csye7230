@@ -1,4 +1,4 @@
-from typing import Dict, List, TypeAlias
+from typing import List, TypeAlias
 
 from colpali_search.schemas.common import ImageMetadata
 from PIL import Image
@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 
 ImageList: TypeAlias = List[List[Image.Image]]
 
-PDFMetadata: TypeAlias = Dict[str, List[ImageMetadata]]
+MetadataList: TypeAlias = List[List[ImageMetadata]]
 
 
 class SinglePDFConversion(BaseModel):
@@ -19,6 +19,6 @@ class SinglePDFConversion(BaseModel):
 
 class PDFsConversion(BaseModel):
     images_list: ImageList
-    pdf_metadata: PDFMetadata
+    pdf_metadata: MetadataList
 
     model_config = ConfigDict(arbitrary_types_allowed=True)

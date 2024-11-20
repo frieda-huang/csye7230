@@ -53,7 +53,7 @@ async def generate_embeddings_for_file(
         )
 
         images, metadata = result.single_pdf_images, result.metadata
-        embeddings = model_service.embed_images([images], {0: images})
+        embeddings = model_service.embed_images([images], [metadata])
 
         await embedding_service.upsert_doc_embeddings(
             embeddings=embeddings, metadata=metadata
