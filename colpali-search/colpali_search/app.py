@@ -1,17 +1,18 @@
 import asyncio
+from contextlib import asynccontextmanager
 
+from colpali_search.context import app_context, initialize_context
 from colpali_search.database import async_session
 from colpali_search.dependencies import (
-    get_embedding_service,
-    get_model_service,
-    get_search_service,
+    EmbeddingSerivceDep,
+    ModelServiceDep,
+    SearchSerivceDep,
 )
 from colpali_search.models import User
+from colpali_search.routers import embeddings, files, index
 from colpali_search.schemas.endpoints.search import SearchRequest
 from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from sqlalchemy import select
-
-from .routers import embeddings, files, index
 
 description = """
 ColPali Search API for searching local PDF files using natural language. 🚀
@@ -47,14 +48,12 @@ You will be able to:
 """
 
 
-async def get_current_user(email: str = "searchagent@gmail.com") -> int:
-    async with async_session.begin() as session:
-        stmt = select(User).where(User.email == email)
-        result = await session.execute(stmt)
-        user = result.scalar_one_or_none()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        return user.id
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    initialize_context()
+    _ = app_context.model_service.model
+    _ = app_context.model_service.processor
+    yield
 
 
 app = FastAPI(
@@ -66,22 +65,30 @@ app = FastAPI(
         "email": "jingyingfhuang@gmail.com",
     },
 )
-
-
 api_v1_router = APIRouter(prefix="/api/v1")
-
 api_v1_router.include_router(embeddings.embeddings_router)
 api_v1_router.include_router(files.files_router)
 api_v1_router.include_router(index.index_router)
+app.include_router(api_v1_router)
+
+
+async def get_current_user(email: str = "searchagent@gmail.com") -> int:
+    async with async_session.begin() as session:
+        stmt = select(User).where(User.email == email)
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user.id
 
 
 @api_v1_router.post("/search/{query}")
 async def search(
     body: SearchRequest,
+    model_service: ModelServiceDep,
+    embedding_service: EmbeddingSerivceDep,
+    search_service: SearchSerivceDep,
     user_id: int = Depends(get_current_user),
-    embedding_service=Depends(get_embedding_service),
-    search_service=Depends(get_search_service),
-    model_service=Depends(get_model_service),
 ):
     # Run similarity search over the page embeddings for all the pages in the collection
     # top_indices has the shape of
@@ -106,9 +113,6 @@ async def search(
 @api_v1_router.post("/benchmark")
 async def benchmark(top_k: int):
     pass
-
-
-app.include_router(api_v1_router)
 
 
 @app.get("/")
