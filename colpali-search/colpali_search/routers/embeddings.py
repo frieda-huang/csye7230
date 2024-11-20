@@ -13,15 +13,15 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile
 embeddings_router = APIRouter(prefix="/embeddings", tags=["embeddings"])
 
 
-async def validate_file_type(file: UploadFile) -> UploadFile:
-    file_type = file.content_type
+async def validate_file_type(pdf_file: UploadFile) -> UploadFile:
+    file_type = pdf_file.content_type
     if file_type != "application/pdf":
         raise HTTPException(
             status_code=404,
             detail=f"Invalid file type. Expected: 'application/pdf'. "
             f"Received: '{file_type}'. Please upload a valid PDF file.",
         )
-    return file
+    return pdf_file
 
 
 @embeddings_router.post("/file")
