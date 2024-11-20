@@ -1,23 +1,19 @@
 from typing import List, TypeAlias
 
 from colpali_search.schemas.common import ImageMetadata
+from colpali_search.types import CustomBaseModel
 from PIL import Image
-from pydantic import BaseModel, ConfigDict
 
 ImageList: TypeAlias = List[List[Image.Image]]
 
 MetadataList: TypeAlias = List[List[ImageMetadata]]
 
 
-class SinglePDFConversion(BaseModel):
+class SinglePDFConversion(CustomBaseModel):
     single_pdf_images: List[Image.Image]
     metadata: List[ImageMetadata]
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-
-class PDFsConversion(BaseModel):
+class PDFsConversion(CustomBaseModel):
     images_list: ImageList
     metadata_list: MetadataList
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)

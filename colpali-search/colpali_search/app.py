@@ -10,7 +10,11 @@ from colpali_search.dependencies import (
 )
 from colpali_search.models import User
 from colpali_search.routers import embeddings, files, index
-from colpali_search.schemas.endpoints.search import SearchRequest
+from colpali_search.schemas.endpoints.search import (
+    SearchRequest,
+    SearchResponse,
+    SearchResult,
+)
 from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from sqlalchemy import select
 
@@ -93,7 +97,7 @@ async def search(
     embedding_service: EmbeddingSerivceDep,
     search_service: SearchSerivceDep,
     user_id: int = Depends(get_current_user),
-):
+) -> SearchResponse:
     # Run similarity search over the page embeddings for all the pages in the collection
     # top_indices has the shape of
     # tensor([[12,  0, 14],
@@ -107,8 +111,7 @@ async def search(
         )
 
         result = await search_service.search(query_embeddings, top_k)
-
-        return {"results": result}
+        return SearchResponse(result=[SearchResult(**item) for item in result])
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
