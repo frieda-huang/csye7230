@@ -74,7 +74,6 @@ api_v1_router = APIRouter(prefix="/api/v1")
 api_v1_router.include_router(embeddings.embeddings_router)
 api_v1_router.include_router(files.files_router)
 api_v1_router.include_router(index.index_router)
-app.include_router(api_v1_router)
 
 
 async def get_current_user(email: str = "colpalisearch@gmail.com") -> int:
@@ -107,7 +106,7 @@ async def search(
             user_id, query, query_embeddings
         )
 
-        result = search_service.search(query_embeddings, top_k)
+        result = await search_service.search(query_embeddings, top_k)
 
         return {"results": result}
 
@@ -127,3 +126,6 @@ async def info():
         "version": "1.0.0",
         "description": "API for searching local files using natural language",
     }
+
+
+app.include_router(api_v1_router)

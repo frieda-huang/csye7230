@@ -95,8 +95,3 @@ async def generate_embeddings_for_files(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error during embedding: {str(e)}")
-
-
-@embeddings_router.get("/status/{job_id}")
-async def get_embedding_job_status(job_id: int):
-    pass
