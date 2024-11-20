@@ -143,7 +143,6 @@ class ColPaliModelService:
                 batch_images, metadata = batch
                 batches = {k: v.to(self.device) for k, v in batch_images.items()}
                 mdata.extend(metadata)
-                self.metadata = mdata
             else:
                 batches = {k: v.to(self.device) for k, v in batch.items()}
 
