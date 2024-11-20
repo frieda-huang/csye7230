@@ -5,7 +5,6 @@ from pydantic import BaseModel, ConfigDict
 
 
 class EmbeddingsFileResponse(BaseModel):
-    id: str
     embeddings: List[List[float]]
     metadata: List[ImageMetadata]
 

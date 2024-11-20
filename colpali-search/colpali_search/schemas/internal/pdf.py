@@ -10,7 +10,6 @@ MetadataList: TypeAlias = List[List[ImageMetadata]]
 
 
 class SinglePDFConversion(BaseModel):
-    pdf_id: str
     single_pdf_images: List[Image.Image]
     metadata: List[ImageMetadata]
 

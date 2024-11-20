@@ -7,7 +7,6 @@ from colpali_search.dependencies import (
     PDFConversionServiceDep,
 )
 from colpali_search.schemas.endpoints.embeddings import EmbeddingsFileResponse
-from colpali_search.utils import generate_uuid
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
 embeddings_router = APIRouter(prefix="/embeddings", tags=["embeddings"])
@@ -60,7 +59,6 @@ async def generate_embeddings_for_file(
         )
 
         return EmbeddingsFileResponse(
-            id=generate_uuid(),
             embeddings=[tensor.view(-1).tolist() for tensor in embeddings],
             metadata=metadata,
         )
@@ -93,7 +91,6 @@ async def generate_embeddings_for_files(
             )
             final_response.append(
                 EmbeddingsFileResponse(
-                    id=generate_uuid(),
                     embeddings=[tensor.view(-1).tolist() for tensor in embeddings],
                     metadata=metadata,
                 )

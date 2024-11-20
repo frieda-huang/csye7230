@@ -11,7 +11,6 @@ from colpali_search.schemas.internal.pdf import (
     PDFsConversion,
     SinglePDFConversion,
 )
-from colpali_search.utils import generate_uuid
 from fastapi import UploadFile
 from pdf2image import convert_from_bytes
 
@@ -36,13 +35,12 @@ class PDFConversionService:
         bytes = asyncio.run(pdf_file.read())
         single_pdf_images = convert_from_bytes(bytes, thread_count=3)
         total_pages = len(single_pdf_images)
-        pdf_id = generate_uuid()
         metadata = self._generate_images_metadata(
             filename=pdf_file.filename,
             total_pages=total_pages,
         )
         return SinglePDFConversion(
-            pdf_id=pdf_id, single_pdf_images=single_pdf_images, metadata=metadata
+            single_pdf_images=single_pdf_images, metadata=metadata
         )
 
     def convert_pdfs2image(
