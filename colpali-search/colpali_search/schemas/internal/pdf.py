@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 
 ImageList: TypeAlias = List[List[Image.Image]]
 
-PDFMetadata: TypeAlias = Dict[int, List[ImageMetadata]]
+PDFMetadata: TypeAlias = Dict[str, List[ImageMetadata]]
 
 
 class SinglePDFConversion(BaseModel):
@@ -18,7 +18,6 @@ class SinglePDFConversion(BaseModel):
 
 
 class PDFsConversion(BaseModel):
-    pdf_files: List[bytes]
     images_list: ImageList
     pdf_metadata: PDFMetadata
 
