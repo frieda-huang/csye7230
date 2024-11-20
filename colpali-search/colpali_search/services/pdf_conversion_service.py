@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import uuid
+import asyncio
 from itertools import islice
 from typing import Dict, List
 
@@ -9,6 +9,7 @@ from colpali_search.schemas.internal.pdf import (
     PDFsConversion,
     SinglePDFConversion,
 )
+from colpali_search.utils import generate_uuid
 from fastapi import UploadFile
 from pdf2image import convert_from_bytes
 
@@ -29,19 +30,18 @@ class PDFConversionService:
             for page_number in range(total_pages)
         ]
 
-    @staticmethod
-    def get_uuid() -> str:
-        return str(uuid.uuid4())
-
     def convert_single_pdf2image(self, pdf_file: UploadFile) -> SinglePDFConversion:
-        single_pdf_images = convert_from_bytes(pdf_file, thread_count=3)
+        bytes = asyncio.run(pdf_file.read())
+        single_pdf_images = convert_from_bytes(bytes, thread_count=3)
         total_pages = len(single_pdf_images)
-        pdf_id = self.get_uuid()
+        pdf_id = generate_uuid()
         metadata = self._generate_images_metadata(
             filename=pdf_file.filename,
             total_pages=total_pages,
         )
-        return single_pdf_images, pdf_id, metadata
+        return SinglePDFConversion(
+            pdf_id=pdf_id, single_pdf_images=single_pdf_images, metadata=metadata
+        )
 
     def convert_pdfs2image(
         self, pdf_files: List[UploadFile], batch_size=4

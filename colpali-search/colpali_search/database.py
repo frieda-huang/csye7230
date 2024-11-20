@@ -3,7 +3,7 @@ from pgvector.psycopg import register_vector_async
 from sqlalchemy import event, inspect, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-DBNAME = "searchagent"
+DBNAME = "colpalisearch"
 
 async_engine = create_async_engine(settings.database_url)
 async_session = async_sessionmaker(bind=async_engine, expire_on_commit=False)

@@ -54,9 +54,14 @@ async def lifespan(app: FastAPI):
     _ = app_context.model_service.model
     _ = app_context.model_service.processor
     yield
+    app_context.model_service = None
+    app_context.embedding_service = None
+    app_context.pdf_conversion_service = None
+    app_context.search_service = None
 
 
 app = FastAPI(
+    lifespan=lifespan,
     title="ColPali Search",
     description=description,
     version="0.0.1",
@@ -72,7 +77,7 @@ api_v1_router.include_router(index.index_router)
 app.include_router(api_v1_router)
 
 
-async def get_current_user(email: str = "searchagent@gmail.com") -> int:
+async def get_current_user(email: str = "colpalisearch@gmail.com") -> int:
     async with async_session.begin() as session:
         stmt = select(User).where(User.email == email)
         result = await session.execute(stmt)

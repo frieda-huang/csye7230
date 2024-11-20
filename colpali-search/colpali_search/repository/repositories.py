@@ -9,19 +9,17 @@ from sqlalchemy import delete, select
 
 
 class FileRepository(Repository[File]):
-    async def get_by_filepath_filename(self, filepath: str, filename: str) -> File:
-        file_stmt = select(File).filter_by(filepath=filepath, filename=filename)
+    async def get_by_filename(self, filename: str) -> File:
+        file_stmt = select(File).filter_by(filename=filename)
         return await self.session.scalar(file_stmt)
 
     async def add(
         self,
-        filepath: str,
         filename: str,
         total_pages: int,
     ) -> File:
         file = File(
             filename=filename,
-            filepath=filepath,
             filetype="pdf",
             total_pages=total_pages,
             last_modified=get_now(),
@@ -32,13 +30,13 @@ class FileRepository(Repository[File]):
 
 
 class PageRepository(Repository[Page]):
-    async def get_by_page_id_and_file(self, page_id: int, file: File) -> Page:
-        file_stmt = select(Page).filter_by(id=page_id, file_id=file.id)
+    async def get_by_page_number_and_file(self, page_number: int, file: File) -> Page:
+        file_stmt = select(Page).filter_by(id=page_number, file_id=file.id)
         return await self.session.scalar(file_stmt)
 
-    async def add(self, page_id: int, file: File) -> Page:
+    async def add(self, page_number: int, file: File) -> Page:
         page = Page(
-            page_number=page_id,
+            page_number=page_number,
             last_modified=get_now(),
             created_at=get_now(),
             file=file,

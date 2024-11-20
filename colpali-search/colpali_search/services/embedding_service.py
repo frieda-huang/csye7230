@@ -61,27 +61,26 @@ class EmbeddingSerivce:
         await self.query_repository.add(query, query_embeddings, user_id)
 
     async def _get_or_add_file(self, metadata: ImageMetadata) -> File:
-        filepath, filename = metadata.filepath, metadata.filename
+        filename = metadata.filename
 
         logger.info(f"Getting or adding file: {filename}")
 
-        file = await self.file_repository.get_by_filepath_filename(filepath, filename)
+        file = await self.file_repository.get_by_filename(filename)
 
         if not file:
             file = await self.file_repository.add(
-                filepath,
                 filename,
                 metadata.total_pages,
             )
         return file
 
     async def _get_or_add_page(self, file: File, metadata: ImageMetadata) -> Page:
-        page_id = metadata.page_id
+        page_number = metadata.page_number
 
-        page = await self.page_repository.get_by_page_id_and_file(page_id, file)
+        page = await self.page_repository.get_by_page_number_and_file(page_number, file)
 
         if not page:
-            page = await self.page_repository.add(page_id, file)
+            page = await self.page_repository.add(page_number, file)
 
         return page
 
@@ -97,8 +96,7 @@ class EmbeddingSerivce:
         embeddings = embedding.tolist()
         vector_embedding = [np.array(e) for e in embeddings]
 
-        folder = await self._get_or_add_folder()
-        file = await self._get_or_add_file(folder, metadata)
+        file = await self._get_or_add_file(metadata)
         page = await self._get_or_add_page(file, metadata)
 
         embedding = await self.embedding_repository.add_or_replace(

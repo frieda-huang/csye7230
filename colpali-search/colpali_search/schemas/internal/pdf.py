@@ -1,16 +1,8 @@
 from typing import Dict, List, TypeAlias
 
+from colpali_search.schemas.common import ImageMetadata
 from PIL import Image
 from pydantic import BaseModel, ConfigDict
-
-
-class ImageMetadata(BaseModel):
-    """Metadata on a single PDF Image"""
-
-    filename: str
-    page_number: int
-    total_pages: int
-
 
 ImageList: TypeAlias = List[List[Image.Image]]
 
@@ -18,7 +10,7 @@ PDFMetadata: TypeAlias = Dict[int, List[ImageMetadata]]
 
 
 class SinglePDFConversion(BaseModel):
-    pdf_id: int
+    pdf_id: str
     single_pdf_images: List[Image.Image]
     metadata: List[ImageMetadata]
 

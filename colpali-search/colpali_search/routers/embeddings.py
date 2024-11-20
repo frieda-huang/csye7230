@@ -1,3 +1,4 @@
+import asyncio
 from typing import List
 
 from colpali_search.dependencies import (
@@ -5,6 +6,8 @@ from colpali_search.dependencies import (
     ModelServiceDep,
     PDFConversionServiceDep,
 )
+from colpali_search.schemas.endpoints.embeddings import EmbeddingsFileResponse
+from colpali_search.utils import generate_uuid
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
 embeddings_router = APIRouter(prefix="/embeddings", tags=["embeddings"])
@@ -27,17 +30,29 @@ async def generate_embeddings_for_file(
     embedding_service: EmbeddingSerivceDep,
     pdf_conversion_service: PDFConversionServiceDep,
     pdf_file: UploadFile = Depends(validate_file_type),
-):
-    result = pdf_conversion_service.convert_pdfs2image([pdf_file])
+) -> EmbeddingsFileResponse:
+    try:
+        loop = asyncio.get_running_loop()
 
-    embeddings = model_service.embed_images(result.images_list, result.pdf_metadata)
+        result = await loop.run_in_executor(
+            None, pdf_conversion_service.convert_single_pdf2image, pdf_file
+        )
 
-    metadata = list(result.pdf_metadata.values())
-    mdata = []
-    mdata.extend(metadata)
-    embedding_service.upsert_doc_embeddings(embeddings=embeddings, metadata=mdata)
+        images, metadata = result.single_pdf_images, result.metadata
+        embeddings = model_service.embed_images([images], {0: images})
 
-    return {"filename": pdf_file.filename, "file_type": pdf_file.content_type}
+        await embedding_service.upsert_doc_embeddings(
+            embeddings=embeddings, metadata=metadata
+        )
+
+        return EmbeddingsFileResponse(
+            id=generate_uuid(),
+            embeddings=[embed.flatten().tolist() for embed in embeddings],
+            metadata=metadata,
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error during embedding: {str(e)}")
 
 
 @embeddings_router.post("/files")

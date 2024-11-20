@@ -44,14 +44,11 @@ class File(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     filename: Mapped[str] = mapped_column(String, nullable=False)
-    filepath: Mapped[str] = mapped_column(String, nullable=False)
     filetype: Mapped[str] = mapped_column(String, nullable=False)
     total_pages: Mapped[int] = mapped_column(Integer, nullable=False)
     summary: Mapped[Optional[str]] = mapped_column(String)
     last_modified: Mapped[datetime] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(String, nullable=False)
-
-    folder_id = mapped_column(ForeignKey("folder.id"), nullable=False)
 
     pages: Mapped[list[Page]] = relationship(
         back_populates="file", cascade="all, delete-orphan"
