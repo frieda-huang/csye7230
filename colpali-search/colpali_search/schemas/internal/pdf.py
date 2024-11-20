@@ -19,6 +19,6 @@ class SinglePDFConversion(BaseModel):
 
 class PDFsConversion(BaseModel):
     images_list: ImageList
-    pdf_metadata: MetadataList
+    metadata_list: MetadataList
 
     model_config = ConfigDict(arbitrary_types_allowed=True)

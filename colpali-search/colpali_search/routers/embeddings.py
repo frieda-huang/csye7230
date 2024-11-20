@@ -83,10 +83,10 @@ async def generate_embeddings_for_files(
             None, pdf_conversion_service.convert_pdfs2image, files
         )
 
-        images_list, pdf_metadata = result.images_list, result.pdf_metadata
+        images_list, metadata_list = result.images_list, result.metadata_list
 
-        for images, metadata in zip(images_list, pdf_metadata.values()):
-            embeddings = model_service.embed_images([images], pdf_metadata)
+        for images, metadata in zip(images_list, metadata_list):
+            embeddings = model_service.embed_images([images], [metadata])
 
             await embedding_service.upsert_doc_embeddings(
                 embeddings=embeddings, metadata=metadata

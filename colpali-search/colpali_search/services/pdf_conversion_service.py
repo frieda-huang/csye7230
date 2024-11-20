@@ -61,4 +61,4 @@ class PDFConversionService:
         while batch := list(islice(it, batch_size)):
             process_batch(batch)
 
-        return PDFsConversion(images_list=images_list, pdf_metadata=metadata_list)
+        return PDFsConversion(images_list=images_list, metadata_list=metadata_list)
