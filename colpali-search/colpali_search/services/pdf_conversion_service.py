@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import asyncio
 from itertools import islice
-from typing import Dict, List
+from typing import List
 
 from colpali_search.schemas.internal.pdf import (
     ImageMetadata,
+    PDFMetadata,
     PDFsConversion,
     SinglePDFConversion,
 )
@@ -47,7 +48,7 @@ class PDFConversionService:
         self, pdf_files: List[UploadFile], batch_size=4
     ) -> PDFsConversion:
         images_list = []
-        pdf_metadata: Dict[str, List[ImageMetadata]] = {}
+        pdf_metadata: PDFMetadata = {}
 
         def process_batch(batch):
             for pdf_file in batch:
@@ -59,4 +60,4 @@ class PDFConversionService:
         while batch := list(islice(it, batch_size)):
             process_batch(batch)
 
-        return PDFsConversion(pdf_files, images_list, pdf_metadata)
+        return PDFsConversion(images_list=images_list, pdf_metadata=pdf_metadata)
