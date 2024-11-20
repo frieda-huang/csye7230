@@ -6,7 +6,8 @@ from colpali_search.dependencies import (
     ModelServiceDep,
     PDFConversionServiceDep,
 )
-from colpali_search.schemas.endpoints.embeddings import EmbeddingsFileResponse
+from colpali_search.schemas.endpoints.embeddings import EmbeddingsResponse
+from colpali_search.utils import convert_tensors_to_list_of_lists
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
 embeddings_router = APIRouter(prefix="/embeddings", tags=["embeddings"])
@@ -43,7 +44,7 @@ async def generate_embeddings_for_file(
     embedding_service: EmbeddingSerivceDep,
     pdf_conversion_service: PDFConversionServiceDep,
     file: UploadFile = Depends(FileValidator.validate_file),
-) -> EmbeddingsFileResponse:
+) -> EmbeddingsResponse:
     try:
         loop = asyncio.get_running_loop()
 
@@ -58,9 +59,8 @@ async def generate_embeddings_for_file(
             embeddings=embeddings, metadata=metadata
         )
 
-        return EmbeddingsFileResponse(
-            embeddings=[tensor.view(-1).tolist() for tensor in embeddings],
-            metadata=metadata,
+        return EmbeddingsResponse(
+            embeddings=convert_tensors_to_list_of_lists(embeddings), metadata=metadata
         )
 
     except Exception as e:
@@ -73,9 +73,8 @@ async def generate_embeddings_for_files(
     embedding_service: EmbeddingSerivceDep,
     pdf_conversion_service: PDFConversionServiceDep,
     files: List[UploadFile] = Depends(FileValidator.validate_files),
-) -> List[EmbeddingsFileResponse]:
+) -> EmbeddingsResponse:
     try:
-        final_response = []
         loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(
             None, pdf_conversion_service.convert_pdfs2image, files
@@ -83,19 +82,16 @@ async def generate_embeddings_for_files(
 
         images_list, metadata_list = result.images_list, result.metadata_list
 
-        for images, metadata in zip(images_list, metadata_list):
-            embeddings = model_service.embed_images([images], [metadata])
+        embeddings = model_service.embed_images(images_list, metadata_list)
+        metadata = [item for sublist in metadata_list for item in sublist]
 
-            await embedding_service.upsert_doc_embeddings(
-                embeddings=embeddings, metadata=metadata
-            )
-            final_response.append(
-                EmbeddingsFileResponse(
-                    embeddings=[tensor.view(-1).tolist() for tensor in embeddings],
-                    metadata=metadata,
-                )
-            )
-        return final_response
+        await embedding_service.upsert_doc_embeddings(
+            embeddings=embeddings, metadata=metadata
+        )
+
+        return EmbeddingsResponse(
+            embeddings=convert_tensors_to_list_of_lists(embeddings), metadata=metadata
+        )
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error during embedding: {str(e)}")

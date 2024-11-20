@@ -4,7 +4,7 @@ from colpali_search.schemas.common import ImageMetadata
 from pydantic import BaseModel, ConfigDict
 
 
-class EmbeddingsFileResponse(BaseModel):
+class EmbeddingsResponse(BaseModel):
     embeddings: List[List[float]]
     metadata: List[ImageMetadata]
 
