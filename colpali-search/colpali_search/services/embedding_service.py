@@ -3,11 +3,19 @@ from typing import List
 import numpy as np
 import torch
 from colpali_search.database import execute_analyze
-from colpali_search.models import Embedding, File, FlattenedEmbedding, Page, Query
+from colpali_search.models import (
+    Embedding,
+    File,
+    FlattenedEmbedding,
+    IndexingStrategy,
+    Page,
+    Query,
+)
 from colpali_search.repository.repositories import (
     EmbeddingRepository,
     FileRepository,
     FlattenedEmbeddingRepository,
+    IndexingStrategyRepository,
     PageRepository,
     QueryRepository,
 )
@@ -30,6 +38,9 @@ class EmbeddingSerivce:
             FlattenedEmbedding, session=session
         )
         self.query_repository = QueryRepository(Query, session=session)
+        self.indexing_strategy_repository = IndexingStrategyRepository(
+            IndexingStrategy, session=session
+        )
 
     async def upsert_doc_embeddings(
         self, embeddings: List[torch.Tensor], metadata: List[ImageMetadata]
@@ -105,4 +116,7 @@ class EmbeddingSerivce:
     async def _finalize_operations(self):
         """Update database statistics and execute indexing"""
         await execute_analyze()
-        await self.indexing_service.configure_index()
+        current_strategy = (
+            await self.indexing_strategy_repository.get_current_strategy()
+        )
+        await self.indexing_service.build_index(current_strategy.strategy_name)

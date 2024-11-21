@@ -1,11 +1,19 @@
 from typing import List
 
-from colpali_search.models import Embedding, File, FlattenedEmbedding, Page, Query
+from colpali_search.models import (
+    Embedding,
+    File,
+    FlattenedEmbedding,
+    Page,
+    Query,
+    IndexingStrategy,
+)
 from colpali_search.repository.base_repository import Repository
 from colpali_search.types import VectorList
 from colpali_search.utils import get_now
 from loguru import logger
 from sqlalchemy import delete, select
+from colpali_search.types import IndexingStrategyType
 
 
 class FileRepository(Repository[File]):
@@ -121,3 +129,31 @@ class QueryRepository(Repository[Query]):
             )
             self.session.add(query)
             return query
+
+
+class IndexingStrategyRepository(Repository[IndexingStrategy]):
+    async def add(self, strategy: IndexingStrategy) -> IndexingStrategy:
+        return await self.session.add(strategy)
+
+    async def get_current_strategy(self) -> IndexingStrategy:
+        indexing_stmt = select(IndexingStrategy).filter_by(id=1)
+        return await self.session.scalar(indexing_stmt)
+
+    async def configure_strategy(
+        self, strategy_name: IndexingStrategyType
+    ) -> IndexingStrategy:
+        name = strategy_name.alias
+        existing_strategy = await self.get_current_strategy()
+
+        if existing_strategy:
+            existing_strategy.strategy_name = name
+            existing_strategy.created_at = get_now()
+            self.session.commit()
+        else:
+            new_strategy = IndexingStrategy(id=1, strategy_name=name)
+            self.add(new_strategy)
+        return IndexingStrategy
+
+    async def reset_strategy(self):
+        """Reset to default HNSWCosineSimilarity"""
+        await self.configure_strategy(IndexingStrategyType.hnsw_cosine_similarity)
