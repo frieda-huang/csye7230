@@ -12,21 +12,16 @@ from colpali_search.repository.repositories import (
     QueryRepository,
 )
 from colpali_search.schemas.internal.pdf import ImageMetadata
-from colpali_search.services.search_engine.context import IndexingContext
-from colpali_search.services.search_engine.strategy_factory import (
-    IndexingStrategyFactory,
-)
+from colpali_search.services.indexing_service import IndexingService
 from colpali_search.types import VectorList
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class EmbeddingSerivce:
-    def __init__(
-        self,
-        session: AsyncSession,
-    ):
+    def __init__(self, session: AsyncSession, indexing_service: IndexingService):
         self.session = session
+        self.indexing_service = indexing_service
 
         self.file_repository = FileRepository(File, session=session)
         self.page_repository = PageRepository(Page, session=session)
@@ -110,8 +105,4 @@ class EmbeddingSerivce:
     async def _finalize_operations(self):
         """Update database statistics and execute indexing"""
         await execute_analyze()
-
-        ctx = IndexingContext(
-            IndexingStrategyFactory.create_strategy("HNSWCosineSimilarity")
-        )
-        await ctx.execute_indexing_strategy()
+        await self.indexing_service.configure_index()

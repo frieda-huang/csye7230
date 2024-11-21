@@ -1,14 +1,7 @@
-from enum import Enum
-
+from colpali_search.types import IndexingStrategyType
 from fastapi import APIRouter
 
 index_router = APIRouter(prefix="/index", tags=["index"])
-
-
-class IndexStrategy(str, Enum):
-    hnsw_cosine_similarity = "hnsw-cs"
-    exact_maxsim = "exact"
-    hnsw_binary_quantization_hamming_distance = "hnsw-bq-hd"
 
 
 @index_router.get("/")
@@ -31,7 +24,7 @@ async def list_supported_index_strategies():
 
 
 @index_router.post("/{strategy}", description="Configure an index strategy")
-async def configure_index_strategy(strategy: IndexStrategy):
+async def configure_index_strategy(strategy: IndexingStrategyType):
     return {"success": strategy}
 
 

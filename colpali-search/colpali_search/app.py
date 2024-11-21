@@ -30,8 +30,8 @@ You can **search local files** or **benchmark the RAG system**.
 You will be able to:
 
 * **Get all files**
-* **Get file by path**
-* **Delete file by path**
+* **Get file by id**
+* **Delete file by id**
 
 
 ## Embeddings
@@ -40,7 +40,7 @@ You will be able to:
 
 * **Generate embeddings for file**
 * **Generate embeddings for files**
-* **Get embedding job status**
+
 
 ## Index
 
