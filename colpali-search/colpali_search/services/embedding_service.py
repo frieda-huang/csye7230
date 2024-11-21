@@ -21,7 +21,7 @@ from colpali_search.repository.repositories import (
 )
 from colpali_search.schemas.internal.pdf import ImageMetadata
 from colpali_search.services.indexing_service import IndexingService
-from colpali_search.types import VectorList
+from colpali_search.types import VectorList, IndexingStrategyType
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -120,7 +120,15 @@ class EmbeddingSerivce:
             await self.indexing_strategy_repository.get_current_strategy()
         )
 
-        if not current_strategy:
-            await self.indexing_service.build_index()  # Use default HNSW with cosine similarity
-        else:
+        if (
+            current_strategy
+            and current_strategy.strategy_name
+            == IndexingStrategyType.exact_maxsim.alias
+        ):
+            return
+
+        if current_strategy:
             await self.indexing_service.build_index(current_strategy.strategy_name)
+        else:
+            # Use default HNSW with cosine similarity
+            await self.indexing_service.build_index()

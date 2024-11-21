@@ -6,6 +6,12 @@ from colpali_search.models import VECT_DIM
 from pgvector.psycopg import register_vector
 
 
+def execute_postgresql_distance_metrics_command(command: str):
+    with psycopg.connect(dbname=DBNAME, autocommit=True) as conn:
+        register_vector(conn)
+        conn.execute(command)
+
+
 class DistanceMetric(ABC):
     @abstractmethod
     def calculate(self):
@@ -41,9 +47,7 @@ class HammingDistance(DistanceMetric):
             LIMIT 20
         $$ LANGUAGE SQL
         """
-        with psycopg.connect(dbname=DBNAME, autocommit=True) as conn:
-            register_vector(conn)
-            conn.execute(SQL_HAMMING_FUNC)
+        execute_postgresql_distance_metrics_command(SQL_HAMMING_FUNC)
 
 
 class CosineSimilarity(DistanceMetric):
@@ -66,9 +70,7 @@ class CosineSimilarity(DistanceMetric):
             FROM similarities
         $$ LANGUAGE SQL
         """
-        with psycopg.connect(dbname=DBNAME, autocommit=True) as conn:
-            register_vector(conn)
-            conn.execute(SQL_COSINE_SIMILARITY)
+        execute_postgresql_distance_metrics_command(SQL_COSINE_SIMILARITY)
 
 
 class MaxSim(DistanceMetric):
@@ -99,6 +101,4 @@ class MaxSim(DistanceMetric):
             FROM max_similarities
         $$ LANGUAGE SQL
         """
-        with psycopg.connect(dbname=DBNAME, autocommit=True) as conn:
-            register_vector(conn)
-            conn.execute(SQL_MAXSIM_FUNC)
+        execute_postgresql_distance_metrics_command(SQL_MAXSIM_FUNC)

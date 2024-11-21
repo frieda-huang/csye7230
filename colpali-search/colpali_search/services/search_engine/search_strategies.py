@@ -21,6 +21,24 @@ def log_row(row: Row):
     )
 
 
+async def execute_postgresql_search_command(
+    command: str, query_embeddings: VectorList
+) -> List[Row]:
+    conn = await psycopg.AsyncConnection.connect(
+        dbname=DBNAME, autocommit=True, row_factory=dict_row
+    )
+
+    async with conn:
+        await register_vector_async(conn)
+        r = await conn.execute(command, (query_embeddings,))
+        result = await r.fetchall()
+
+        for row in result:
+            log_row(row)
+
+        return result
+
+
 class SearchStrategy(ABC):
     @abstractmethod
     async def search(self, query_embeddings: VectorList, top_k: int) -> List[Row]:
@@ -55,19 +73,9 @@ class ExactMaxSimSearchStrategy(SearchStrategy):
         ORDER BY
             tp.max_sim DESC;
         """
-        conn = await psycopg.AsyncConnection.connect(
-            dbname=DBNAME, autocommit=True, row_factory=dict_row
+        return await execute_postgresql_search_command(
+            SQL_RETRIEVE_TOP_K_DOCS, query_embeddings
         )
-
-        async with conn:
-            await register_vector_async(conn)
-            r = await conn.execute(SQL_RETRIEVE_TOP_K_DOCS, (query_embeddings,))
-            result = await r.fetchall()
-
-            for row in result:
-                log_row(row)
-
-            return result
 
 
 class ANNHNSWHammingSearchStrategy(SearchStrategy):
@@ -105,18 +113,7 @@ class ANNHNSWHammingSearchStrategy(SearchStrategy):
         JOIN
             file f ON f.id = p.file_id
         """
-        conn = await psycopg.AsyncConnection.connect(
-            dbname=DBNAME, autocommit=True, row_factory=dict_row
-        )
-        async with conn:
-            await register_vector_async(conn)
-            r = await conn.execute(SQL_RERANK, (query_embeddings,))
-            result = await r.fetchall()
-
-            for row in result:
-                log_row(row)
-
-        return result
+        return await execute_postgresql_search_command(SQL_RERANK, query_embeddings)
 
 
 class ANNHNSWCosineSimilaritySearchStrategy(SearchStrategy):
@@ -124,7 +121,7 @@ class ANNHNSWCosineSimilaritySearchStrategy(SearchStrategy):
         cosine_similarity = CosineSimilarity()
         cosine_similarity.calculate()
 
-        SQL = f"""
+        SQL_COSINE_SIMILARITY = f"""
         WITH top_pages AS (
             SELECT
                 e.page_id, cosine_similarity(e.vector_embedding, %s) AS cosine_similarity
@@ -147,15 +144,6 @@ class ANNHNSWCosineSimilaritySearchStrategy(SearchStrategy):
         ORDER BY
             tp.cosine_similarity DESC;
         """
-        conn = await psycopg.AsyncConnection.connect(
-            dbname=DBNAME, autocommit=True, row_factory=dict_row
+        return await execute_postgresql_search_command(
+            SQL_COSINE_SIMILARITY, query_embeddings
         )
-        async with conn:
-            await register_vector_async(conn)
-            r = await conn.execute(SQL, (query_embeddings,))
-            result = await r.fetchall()
-
-            for row in result:
-                log_row(row)
-
-        return result
