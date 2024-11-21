@@ -64,7 +64,9 @@ async def generate_embeddings_for_file(
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error during embedding: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Unexpected error during embedding: {e}"
+        )
 
 
 @embeddings_router.post("/files")
@@ -94,4 +96,6 @@ async def generate_embeddings_for_files(
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error during embedding: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Unexpected error during embedding: {e}"
+        )

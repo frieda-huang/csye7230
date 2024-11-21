@@ -13,6 +13,9 @@ class FileRepository(Repository[File]):
         file_stmt = select(File).filter_by(filename=filename)
         return await self.session.scalar(file_stmt)
 
+    async def get_by_id(self, id: int) -> File:
+        return await self.session.get(File, id)
+
     async def add(
         self,
         filename: str,

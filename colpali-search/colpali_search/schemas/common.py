@@ -7,3 +7,8 @@ class ImageMetadata(BaseModel):
     filename: str
     page_number: int
     total_pages: int
+
+
+class ErrorResponse(BaseModel):
+    code: int
+    message: str
