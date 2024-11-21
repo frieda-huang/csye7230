@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from itertools import islice
-from typing import List
+from typing import List, Optional
 
 from colpali_search.schemas.internal.pdf import (
     ImageList,
@@ -11,11 +11,15 @@ from colpali_search.schemas.internal.pdf import (
     PDFsConversion,
     SinglePDFConversion,
 )
+from colpali_search.services.benchmark_service import BenchmarkService
 from fastapi import UploadFile
 from pdf2image import convert_from_bytes
 
 
 class PDFConversionService:
+    def __init__(self, benchmark_service: BenchmarkService):
+        self.benchmark_service = benchmark_service
+
     def _generate_images_metadata(
         self,
         filename: str,
@@ -56,6 +60,34 @@ class PDFConversionService:
                 metadata_list.append(result.metadata)
 
         it = iter(pdf_files)
+        while batch := list(islice(it, batch_size)):
+            process_batch(batch)
+
+        return PDFsConversion(images_list=images_list, metadata_list=metadata_list)
+
+    def retrieve_pdfImage_from_vidore(
+        self, dataset_size: Optional[int] = None, batch_size=4
+    ):
+        """We use this method to benchmark our rag system
+
+        We will use the dataset from https://huggingface.co/datasets/vidore/syntheticDocQA_artificial_intelligence_test
+        """
+        ds = self.benchmark_service.fetch_dataset(dataset_size=dataset_size)
+
+        images_list = [[image] for image in ds["image"]]
+        metadata_list: MetadataList = []
+
+        def process_batch(batch):
+            for row in batch:
+                metadata_list.append(
+                    ImageMetadata(
+                        filename=row["image_filename"],
+                        page_number=int(row["page"]),
+                        total_pages=1,
+                    )
+                )
+
+        it = iter(ds)
         while batch := list(islice(it, batch_size)):
             process_batch(batch)
 

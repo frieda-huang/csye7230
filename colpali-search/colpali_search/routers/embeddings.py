@@ -1,5 +1,5 @@
 import asyncio
-from typing import List
+from typing import Callable, List, Optional
 
 from colpali_search.dependencies import (
     EmbeddingSerivceDep,
@@ -7,6 +7,7 @@ from colpali_search.dependencies import (
     PDFConversionServiceDep,
 )
 from colpali_search.schemas.endpoints.embeddings import EmbeddingsResponse
+from colpali_search.schemas.internal.pdf import PDFsConversion
 from colpali_search.utils import convert_tensors_to_list_of_lists
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
@@ -76,11 +77,34 @@ async def generate_embeddings_for_files(
     pdf_conversion_service: PDFConversionServiceDep,
     files: List[UploadFile] = Depends(FileValidator.validate_files),
 ) -> EmbeddingsResponse:
+    def pdf_conversion_func():
+        return pdf_conversion_service.convert_pdfs2image(files)
+
+    return await process_embeddings(
+        model_service, embedding_service, pdf_conversion_func
+    )
+
+
+@embeddings_router.post("/benchmark")
+async def generate_embeddings_for_benchmark(
+    model_service: ModelServiceDep,
+    embedding_service: EmbeddingSerivceDep,
+    pdf_conversion_service: PDFConversionServiceDep,
+) -> EmbeddingsResponse:
+    pdf_conversion_func = pdf_conversion_service.retrieve_pdfImage_from_vidore
+    return await process_embeddings(
+        model_service, embedding_service, pdf_conversion_func
+    )
+
+
+async def process_embeddings(
+    model_service: ModelServiceDep,
+    embedding_service: EmbeddingSerivceDep,
+    pdf_conversion_func: Callable[[Optional[List[UploadFile]]], PDFsConversion],
+) -> EmbeddingsResponse:
     try:
         loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(
-            None, pdf_conversion_service.convert_pdfs2image, files
-        )
+        result = await loop.run_in_executor(None, pdf_conversion_func)
 
         images_list, metadata_list = result.images_list, result.metadata_list
 

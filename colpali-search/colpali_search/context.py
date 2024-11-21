@@ -23,7 +23,6 @@ app_context = AppContext()
 
 def initialize_context():
     app_context.model_service = ColPaliModelService()
-    app_context.pdf_conversion_service = PDFConversionService()
     app_context.search_service = SearchService()
     app_context.indexing_service = IndexingService(async_session())
     app_context.file_service = FileService(async_session())
@@ -32,4 +31,7 @@ def initialize_context():
     )
     app_context.benchmark_service = BenchmarkService(
         model_service=app_context.model_service
+    )
+    app_context.pdf_conversion_service = PDFConversionService(
+        benchmark_service=app_context.benchmark_service
     )

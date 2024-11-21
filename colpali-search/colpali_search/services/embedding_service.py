@@ -119,4 +119,8 @@ class EmbeddingSerivce:
         current_strategy = (
             await self.indexing_strategy_repository.get_current_strategy()
         )
-        await self.indexing_service.build_index(current_strategy.strategy_name)
+
+        if not current_strategy:
+            await self.indexing_service.build_index()  # Use default HNSW with cosine similarity
+        else:
+            await self.indexing_service.build_index(current_strategy.strategy_name)
