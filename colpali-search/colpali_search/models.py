@@ -3,7 +3,7 @@ from typing import Optional
 
 import numpy as np
 from pgvector.sqlalchemy import HALFVEC
-from sqlalchemy import ARRAY, ForeignKey, Integer, LargeBinary, String
+from sqlalchemy import ARRAY, ForeignKey, Integer, LargeBinary, String, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 """
@@ -124,3 +124,16 @@ class User(Base):
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, created_at={self.created_at})>"
+
+
+class IndexingStrategy(Base):
+    __tablename__ = "indexing_strategy"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    strategy_name: Mapped[str] = mapped_column(
+        String, nullable=False, default=text("HNSWCosineSimilarity")
+    )
+    created_at: Mapped[datetime] = mapped_column(String, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<IndexingStrategy(id={self.id}, strategy_name={self.strategy_name}, created_at={self.created_at})>"
