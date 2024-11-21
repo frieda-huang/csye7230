@@ -1,14 +1,8 @@
-import asyncio
 from contextlib import asynccontextmanager
 
 from colpali_search.context import app_context, initialize_context
 from colpali_search.database import async_session
-from colpali_search.dependencies import (
-    BenchmarkServiceDep,
-    EmbeddingSerivceDep,
-    ModelServiceDep,
-    SearchSerivceDep,
-)
+from colpali_search.dependencies import BenchmarkServiceDep, SearchSerivceDep
 from colpali_search.models import User
 from colpali_search.routers import embeddings, files, index
 from colpali_search.schemas.endpoints.benchmark import BenchmarkResponse
@@ -42,6 +36,7 @@ You will be able to:
 
 * **Generate embeddings for file**
 * **Generate embeddings for files**
+* **Generate embeddings for benchmarking**
 
 
 ## Index
@@ -95,24 +90,13 @@ async def get_current_user(email: str = "colpalisearch@gmail.com") -> int:
 @api_v1_router.post("/search/{query}")
 async def search(
     body: SearchRequest,
-    model_service: ModelServiceDep,
-    embedding_service: EmbeddingSerivceDep,
     search_service: SearchSerivceDep,
     user_id: int = Depends(get_current_user),
 ) -> SearchResponse:
-    # Run similarity search over the page embeddings for all the pages in the collection
-    # top_indices has the shape of
-    # tensor([[12,  0, 14],
-    # [15, 14, 11]])
     query, top_k = body.query, body.top_k
 
     try:
-        query_embeddings = await asyncio.to_thread(model_service.embed_query, query)
-        await embedding_service.upsert_query_embeddings(
-            user_id, query, query_embeddings
-        )
-
-        result = await search_service.search(query_embeddings, top_k)
+        result = await search_service.search(user_id, query, top_k)
         return SearchResponse(result=[SearchResult(**item) for item in result])
 
     except Exception as e:
@@ -121,11 +105,13 @@ async def search(
 
 @api_v1_router.post("/benchmark")
 async def benchmark(
-    top_k: int, benchmark_service: BenchmarkServiceDep
+    top_k: int,
+    benchmark_service: BenchmarkServiceDep,
+    user_id: int = Depends(get_current_user),
 ) -> BenchmarkResponse:
-    average_recall_score = await benchmark_service.average_recall(top_k)
-    precision_score = await benchmark_service.precision()
-    mrr_score = await benchmark_service.mrr()
+    average_recall_score = await benchmark_service.average_recall(top_k, user_id)
+    precision_score = await benchmark_service.precision(top_k, user_id)
+    mrr_score = await benchmark_service.mrr(top_k, user_id)
 
     return BenchmarkResponse(
         average_recall_score=average_recall_score,

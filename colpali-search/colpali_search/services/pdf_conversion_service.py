@@ -80,11 +80,13 @@ class PDFConversionService:
         def process_batch(batch):
             for row in batch:
                 metadata_list.append(
-                    ImageMetadata(
-                        filename=row["image_filename"],
-                        page_number=int(row["page"]),
-                        total_pages=1,
-                    )
+                    [
+                        ImageMetadata(
+                            filename=row["image_filename"],
+                            page_number=int(row["page"]),
+                            total_pages=1,
+                        )
+                    ]
                 )
 
         it = iter(ds)
