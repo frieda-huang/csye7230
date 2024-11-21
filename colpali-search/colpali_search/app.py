@@ -4,12 +4,14 @@ from contextlib import asynccontextmanager
 from colpali_search.context import app_context, initialize_context
 from colpali_search.database import async_session
 from colpali_search.dependencies import (
+    BenchmarkServiceDep,
     EmbeddingSerivceDep,
     ModelServiceDep,
     SearchSerivceDep,
 )
 from colpali_search.models import User
 from colpali_search.routers import embeddings, files, index
+from colpali_search.schemas.endpoints.benchmark import BenchmarkResponse
 from colpali_search.schemas.endpoints.search import (
     SearchRequest,
     SearchResponse,
@@ -118,8 +120,18 @@ async def search(
 
 
 @api_v1_router.post("/benchmark")
-async def benchmark(top_k: int):
-    pass
+async def benchmark(
+    top_k: int, benchmark_service: BenchmarkServiceDep
+) -> BenchmarkResponse:
+    average_recall_score = await benchmark_service.average_recall(top_k)
+    precision_score = await benchmark_service.precision()
+    mrr_score = await benchmark_service.mrr()
+
+    return BenchmarkResponse(
+        average_recall_score=average_recall_score,
+        precision_score=precision_score,
+        mrr_score=mrr_score,
+    )
 
 
 @app.get("/")

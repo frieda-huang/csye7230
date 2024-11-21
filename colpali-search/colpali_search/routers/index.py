@@ -1,11 +1,11 @@
-from colpali_search.types import IndexingStrategyType
-from fastapi import APIRouter, HTTPException
 from colpali_search.dependencies import IndexingServiceDep
 from colpali_search.schemas.endpoints.index import (
     ConfigureIndexResponse,
     ResetIndexResponse,
 )
+from colpali_search.types import IndexingStrategyType
 from colpali_search.utils import get_now
+from fastapi import APIRouter, HTTPException
 
 index_router = APIRouter(prefix="/index", tags=["index"])
 
