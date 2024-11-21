@@ -29,18 +29,7 @@ async def list_supported_index_strategies():
     return {"strategies": strategies}
 
 
-@index_router.post("/{strategy}", description="Configure an index strategy")
-async def configure_index_strategy(
-    strategy: IndexingStrategyType, indexing_service: IndexingServiceDep
-):
-    try:
-        indexing_strategy = await indexing_service.configure_strategy(strategy)
-        return ConfigureIndexResponse.model_validate(indexing_strategy)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@index_router.post("/reset", description="Reset index strategy")
+@index_router.post("/reset-strategy", description="Reset index strategy")
 async def reset_index_strategy(indexing_service: IndexingServiceDep):
     try:
         await indexing_service.reset_strategy()
@@ -51,3 +40,14 @@ async def reset_index_strategy(indexing_service: IndexingServiceDep):
         )
     except Exception as e:
         raise HTTPException(status_code=403, detail=str(e))
+
+
+@index_router.post("/{strategy}", description="Configure an index strategy")
+async def configure_index_strategy(
+    strategy: IndexingStrategyType, indexing_service: IndexingServiceDep
+):
+    try:
+        indexing_strategy = await indexing_service.configure_strategy(strategy)
+        return ConfigureIndexResponse.model_validate(indexing_strategy)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
