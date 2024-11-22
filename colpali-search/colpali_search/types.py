@@ -10,7 +10,7 @@ QueryEmbeddingList: TypeAlias = List[NDArray[Any]]
 
 
 class CustomBaseModel(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
 
 
 class IndexingStrategyType(str, Enum):

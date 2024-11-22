@@ -1,10 +1,10 @@
 import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from colpali_search.types import CustomBaseModel
 
 
-class FileResultResponse(BaseModel):
+class FileResultResponse(CustomBaseModel):
     id: int
     filename: str
     filetype: str
@@ -12,5 +12,3 @@ class FileResultResponse(BaseModel):
     summary: Optional[str]
     last_modified: datetime.datetime
     created_at: datetime.datetime
-
-    model_config = ConfigDict(from_attributes=True)
