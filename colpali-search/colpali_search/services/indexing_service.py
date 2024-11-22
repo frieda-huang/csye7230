@@ -15,6 +15,11 @@ class IndexingService:
             IndexingStrategy, session=session
         )
 
+    def _create_context(self, strategy_type: IndexingStrategyType) -> IndexingContext:
+        return IndexingContext(
+            IndexingStrategyFactory.create_strategy(strategy_type.alias)
+        )
+
     async def get_current_strategy(self):
         await self.indexing_strategy_repository.get_current_strategy()
 
@@ -22,10 +27,19 @@ class IndexingService:
         self,
         strategy_type: IndexingStrategyType = IndexingStrategyType.hnsw_cosine_similarity,
     ):
-        ctx = IndexingContext(
-            IndexingStrategyFactory.create_strategy(strategy_type.alias)
-        )
+        ctx = self._create_context(strategy_type)
         await ctx.execute_indexing_strategy()
+
+    async def drop_indexes(self, strategy_type: IndexingStrategyType):
+        ctx = self._create_context(strategy_type)
+        has_indexes = await ctx.get_indexes()
+
+        if has_indexes:
+            await ctx.execute_drop_indexes()
+        else:
+            raise ValueError(
+                "No indexes found to drop. Ensure that indexing has been built before attempting to drop."
+            )
 
     async def configure_strategy(
         self, strategy_name: IndexingStrategyType

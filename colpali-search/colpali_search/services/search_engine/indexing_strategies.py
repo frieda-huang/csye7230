@@ -1,9 +1,20 @@
 from abc import ABC, abstractmethod
+from typing import List
 
 import psycopg
 from colpali_search.database import DBNAME
 from colpali_search.models import VECT_DIM
+from loguru import logger
 from pgvector.psycopg import register_vector_async
+from psycopg.cursor import Row
+
+SQL_GET_INDEXES = """
+SELECT indexname
+FROM pg_indexes
+WHERE schemaname = 'public'
+AND tablename = 'flattened_embedding'
+AND indexname != 'flattened_embedding_pkey'
+"""
 
 
 async def execute_postgresql_indexing_command(command: str):
@@ -19,18 +30,27 @@ class IndexingStrategy(ABC):
     async def build_index(self):
         pass
 
-    async def drop_index(self):
-        SQL_DROP_INDEX = """
+    async def get_indexes(self) -> List[Row]:
+        conn = await psycopg.AsyncConnection.connect(dbname=DBNAME, autocommit=True)
+
+        async with conn:
+            await register_vector_async(conn)
+            r = await conn.execute(SQL_GET_INDEXES)
+            result = await r.fetchall()
+
+            for row in result:
+                logger.info(f"Getting index: {row}")
+
+            return result
+
+    async def drop_indexes(self):
+        SQL_DROP_INDEX = f"""
         DO $$
         DECLARE
             index_name TEXT;
         BEGIN
             FOR index_name IN
-                SELECT indexname
-                FROM pg_indexes
-                WHERE schemaname = 'public'
-                AND tablename = 'flattened_embedding'
-                AND indexname != 'flattened_embedding_pkey'
+                {SQL_GET_INDEXES}
             LOOP
                 EXECUTE format('DROP INDEX IF EXISTS %I', index_name);
             END LOOP;

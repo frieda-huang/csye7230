@@ -36,3 +36,11 @@ class IndexingContext:
     async def execute_indexing_strategy(self):
         logger.info("Building index...")
         return await self._strategy.build_index()
+
+    async def get_indexes(self) -> List[Row]:
+        logger.info("Getting indexes...")
+        return await self._strategy.get_indexes()
+
+    async def execute_drop_indexes(self):
+        logger.info("Dropping indexes...")
+        return await self._strategy.drop_indexes()

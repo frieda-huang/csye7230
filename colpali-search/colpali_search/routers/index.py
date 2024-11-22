@@ -47,6 +47,12 @@ async def configure_index_strategy(
     strategy: IndexingStrategyType, indexing_service: IndexingServiceDep
 ):
     try:
+        if strategy == IndexingStrategyType.exact_maxsim:
+            # FIXME: This is a hacky way to drop indexes if user wants to use exact search
+            await indexing_service.drop_index(
+                IndexingStrategyType.hnsw_cosine_similarity
+            )
+
         indexing_strategy = await indexing_service.configure_strategy(strategy)
         return ConfigureIndexResponse.model_validate(indexing_strategy)
     except Exception as e:
