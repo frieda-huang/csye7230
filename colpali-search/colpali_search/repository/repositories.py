@@ -143,16 +143,16 @@ class IndexingStrategyRepository(Repository[IndexingStrategy]):
         self, strategy_name: IndexingStrategyType
     ) -> IndexingStrategy:
         name = strategy_name.alias
-        existing_strategy = await self.get_current_strategy()
+        strategy = await self.get_current_strategy()
 
-        if existing_strategy:
-            existing_strategy.strategy_name = name
-            existing_strategy.created_at = get_now()
+        if strategy:
+            strategy.strategy_name = name
+            strategy.created_at = get_now()
             self.session.commit()
         else:
-            new_strategy = IndexingStrategy(id=1, strategy_name=name)
-            self.add(new_strategy)
-        return IndexingStrategy
+            strategy = IndexingStrategy(id=1, strategy_name=name)
+            self.add(strategy)
+        return strategy
 
     async def reset_strategy(self):
         """Reset to default HNSWCosineSimilarity"""
