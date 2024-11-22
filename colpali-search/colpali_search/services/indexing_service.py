@@ -5,6 +5,7 @@ from colpali_search.services.search_engine.strategy_factory import (
     IndexingStrategyFactory,
 )
 from colpali_search.types import IndexingStrategyType
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -16,6 +17,9 @@ class IndexingService:
         )
 
     def _create_context(self, strategy_type: IndexingStrategyType) -> IndexingContext:
+        if not isinstance(strategy_type, IndexingStrategyType):
+            raise ValueError(f"Invalid strategy_type: {strategy_type}")
+
         return IndexingContext(
             IndexingStrategyFactory.create_strategy(strategy_type.alias)
         )
@@ -27,6 +31,10 @@ class IndexingService:
         self,
         strategy_type: IndexingStrategyType = IndexingStrategyType.hnsw_cosine_similarity,
     ):
+        logger.info(
+            f"Building index: strategy_type={strategy_type}, type={type(strategy_type)}"
+        )
+
         ctx = self._create_context(strategy_type)
         await ctx.execute_indexing_strategy()
 

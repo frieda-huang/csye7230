@@ -1,5 +1,5 @@
-from typing import Any, List, TypeAlias
 from enum import Enum
+from typing import Any, List, TypeAlias
 
 from numpy.typing import NDArray
 from pydantic import BaseModel, ConfigDict
@@ -7,6 +7,15 @@ from pydantic import BaseModel, ConfigDict
 VectorList: TypeAlias = List[NDArray]
 
 QueryEmbeddingList: TypeAlias = List[NDArray[Any]]
+
+alias_map = {
+    "hnsw-cs": "HNSWCosineSimilarity",
+    "exact": "ExactMaxSim",
+    "hnsw-bq-hd": "HNSWBQHamming",
+    "HNSWCosineSimilarity": "hnsw-cs",
+    "ExactMaxSim": "exact",
+    "HNSWBQHamming": "hnsw-bq-hd",
+}
 
 
 class CustomBaseModel(BaseModel):
@@ -20,9 +29,13 @@ class IndexingStrategyType(str, Enum):
 
     @property
     def alias(self):
-        aliases = {
-            "hnsw-cs": "HNSWCosineSimilarity",
-            "exact": "ExactMaxSim",
-            "hnsw-bq-hd": "HNSWBQHamming",
-        }
-        return aliases[self.value]
+        try:
+            return alias_map[self.value]
+        except KeyError as e:
+            raise ValueError(f"Invalid alias for {self.value}") from e
+
+    @classmethod
+    def from_alias(cls, alias: str):
+        if alias not in alias_map:
+            raise ValueError(f"'{alias}' is not a valid IndexingStrategyType alias")
+        return cls(alias_map[alias])

@@ -120,15 +120,15 @@ class EmbeddingSerivce:
             await self.indexing_strategy_repository.get_current_strategy()
         )
 
-        if (
-            current_strategy
-            and current_strategy.strategy_name
-            == IndexingStrategyType.exact_maxsim.alias
-        ):
-            return
-
         if current_strategy:
-            await self.indexing_service.build_index(current_strategy.strategy_name)
+            strategy_type = IndexingStrategyType.from_alias(
+                current_strategy.strategy_name
+            )
+
+            if strategy_type == IndexingStrategyType.exact_maxsim:
+                return
+
+            await self.indexing_service.build_index(strategy_type)
         else:
             # Use default HNSW with cosine similarity
             await self.indexing_service.build_index()

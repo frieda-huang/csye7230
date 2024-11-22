@@ -49,7 +49,7 @@ async def configure_index_strategy(
     try:
         if strategy == IndexingStrategyType.exact_maxsim:
             # FIXME: This is a hacky way to drop indexes if user wants to use exact search
-            await indexing_service.drop_index(
+            await indexing_service.drop_indexes(
                 IndexingStrategyType.hnsw_cosine_similarity
             )
 
