@@ -31,11 +31,15 @@ def connect(dbapi_connection, connection_record):
 Base.metadata.drop_all(engine)
 Base.metadata.create_all(engine)
 
+VEC_DIM = 128
+vectors = [
+    np.array([1.0] * VEC_DIM, dtype=np.float16),
+    np.array([2.0] * VEC_DIM, dtype=np.float16),
+]
+
 
 def create_data():
     session = Session(engine)
-
-    vectors = [np.array([1.0] * 128, dtype=np.float16)]
 
     user = User(
         id=1,
@@ -146,6 +150,7 @@ class TestSqlalchemy:
             page = session.scalar(page_stmt)
 
             assert embedding.id == page.id
+            assert np.array_equal(embedding.vector_embedding[0].to_list(), vectors[0])
 
     def test_flattened_embedding_orm(self):
         create_data()
@@ -153,14 +158,17 @@ class TestSqlalchemy:
             stmt = select(FlattenedEmbedding)
             flattened_embedding = session.scalar(stmt)
 
-            expected_vector = np.array([1.0] * 128, dtype=np.float16)
-
             assert np.array_equal(
-                flattened_embedding.vector_embedding.to_list(), expected_vector
+                flattened_embedding.vector_embedding.to_list(), vectors[0]
             )
 
     def test_query_orm(self):
-        pass
+        create_data()
+        with Session(array_engine) as session:
+            stmt = select(Query)
+            query = session.scalar(stmt)
+
+            assert np.array_equal(query.vector_embedding[1].to_list(), vectors[1])
 
     def test_user_orm(self):
         create_data()
@@ -168,7 +176,6 @@ class TestSqlalchemy:
             stmt = select(User)
             user = session.scalar(stmt)
 
-            assert user.id
             assert user.email == "test@gmail.com"
 
     def test_indexing_strategy(self):
