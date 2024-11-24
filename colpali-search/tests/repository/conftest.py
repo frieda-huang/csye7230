@@ -1,5 +1,6 @@
 import numpy as np
 import pytest_asyncio
+from colpali_search.config import settings
 from colpali_search.models import (
     Base,
     Embedding,
@@ -19,7 +20,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 @pytest_asyncio.fixture(scope="function")
 async def async_session():
     async_engine = create_async_engine(
-        "postgresql+psycopg://localhost/colpalisearch_test",
+        settings.test_database_url,
         isolation_level="AUTOCOMMIT",
     )
 
