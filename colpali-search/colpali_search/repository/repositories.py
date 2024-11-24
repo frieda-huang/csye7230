@@ -119,15 +119,14 @@ class QueryRepository(Repository[Query]):
     async def add(
         self, query: Query, query_embeddings: VectorList, user_id: int
     ) -> Query:
-        async with self.session.begin():
-            query = Query(
-                text=query,
-                vector_embedding=query_embeddings,
-                created_at=get_now(),
-                user_id=user_id,
-            )
-            self.session.add(query)
-            return query
+        query = Query(
+            text=query,
+            vector_embedding=query_embeddings,
+            created_at=get_now(),
+            user_id=user_id,
+        )
+        self.session.add(query)
+        return query
 
 
 class IndexingStrategyRepository(Repository[IndexingStrategy]):

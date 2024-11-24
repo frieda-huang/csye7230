@@ -64,7 +64,8 @@ class EmbeddingSerivce:
     async def upsert_query_embeddings(
         self, user_id: int, query: str, query_embeddings: List[VectorList]
     ):
-        await self.query_repository.add(query, query_embeddings, user_id)
+        async with self.session.begin():
+            await self.query_repository.add(query, query_embeddings, user_id)
 
     async def _get_or_add_file(self, metadata: ImageMetadata) -> File:
         filename = metadata.filename
