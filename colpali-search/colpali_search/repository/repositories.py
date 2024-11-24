@@ -4,16 +4,15 @@ from colpali_search.models import (
     Embedding,
     File,
     FlattenedEmbedding,
+    IndexingStrategy,
     Page,
     Query,
-    IndexingStrategy,
 )
 from colpali_search.repository.base_repository import Repository
-from colpali_search.types import VectorList
+from colpali_search.types import IndexingStrategyType, VectorList
 from colpali_search.utils import get_now
 from loguru import logger
 from sqlalchemy import delete, select
-from colpali_search.types import IndexingStrategyType
 
 
 class FileRepository(Repository[File]):
@@ -133,7 +132,8 @@ class QueryRepository(Repository[Query]):
 
 class IndexingStrategyRepository(Repository[IndexingStrategy]):
     async def add(self, strategy: IndexingStrategy) -> IndexingStrategy:
-        return await self.session.add(strategy)
+        self.session.add(strategy)
+        return strategy
 
     async def get_current_strategy(self) -> IndexingStrategy:
         indexing_stmt = select(IndexingStrategy).filter_by(id=1)

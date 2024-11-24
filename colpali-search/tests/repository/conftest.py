@@ -52,7 +52,6 @@ async def seed(async_session):
         ]
 
         user = User(
-            id=1,
             email="test@gmail.com",
             password_hash="123",
             created_at=get_now(),
@@ -60,7 +59,6 @@ async def seed(async_session):
         async_session.add(user)
 
         file = File(
-            id=1,
             filename="test.pdf",
             filetype="pdf",
             total_pages=1,
@@ -70,7 +68,6 @@ async def seed(async_session):
         async_session.add(file)
 
         page = Page(
-            id=1,
             page_number=1,
             last_modified=get_now(),
             created_at=get_now(),
@@ -79,7 +76,6 @@ async def seed(async_session):
         async_session.add(page)
 
         embedding = Embedding(
-            id=1,
             vector_embedding=vectors,
             last_modified=get_now(),
             created_at=get_now(),
@@ -88,7 +84,6 @@ async def seed(async_session):
         async_session.add(embedding)
 
         flattened_embedding = FlattenedEmbedding(
-            id=1,
             vector_embedding=vectors[0],
             last_modified=get_now(),
             created_at=get_now(),
@@ -97,7 +92,6 @@ async def seed(async_session):
         async_session.add(flattened_embedding)
 
         query = Query(
-            id=1,
             text="test query",
             vector_embedding=vectors,
             created_at=get_now(),
@@ -106,7 +100,6 @@ async def seed(async_session):
         async_session.add(query)
 
         indexing_strategy = IndexingStrategy(
-            id=1,
             strategy_name="ExactMaxSim",
             created_at=get_now(),
         )

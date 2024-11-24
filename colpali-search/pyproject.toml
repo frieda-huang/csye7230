@@ -27,6 +27,11 @@ greenlet = "^3.1.1"
 bcrypt = "^4.2.1"
 
 
+[tool.poetry.group.test.dependencies]
+pytest-asyncio = "^0.24.0"
+pytest = "^8.3.3"
+pytest-sugar = "^1.0.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
