@@ -61,7 +61,9 @@ async def generate_embeddings_for_file(
         )
 
         return EmbeddingsResponse(
-            embeddings=convert_tensors_to_list_of_lists(embeddings), metadata=metadata
+            message="File successfully embedded",
+            embeddings=convert_tensors_to_list_of_lists(embeddings),
+            metadata=metadata,
         )
 
     except Exception as e:
@@ -116,7 +118,9 @@ async def process_embeddings(
         )
 
         return EmbeddingsResponse(
-            embeddings=convert_tensors_to_list_of_lists(embeddings), metadata=metadata
+            message="Files successfully embedded",
+            embeddings=convert_tensors_to_list_of_lists(embeddings),
+            metadata=metadata,
         )
 
     except Exception as e:

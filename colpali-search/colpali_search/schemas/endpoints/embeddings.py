@@ -5,5 +5,6 @@ from colpali_search.types import CustomBaseModel
 
 
 class EmbeddingsResponse(CustomBaseModel):
+    message: str
     embeddings: List[List[float]]
     metadata: List[ImageMetadata]
