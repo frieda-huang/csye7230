@@ -193,6 +193,16 @@ TYPE HALFVEC(128)
 USING vector_embedding::HALFVEC(128);
 ```
 
+### To deal with invalid password after the computer didn't complete the shutdown process, we need to execute the following commands:
+
+```
+cd /opt/homebrew/var/postgresql
+
+rm postmaster.pid
+
+brew services restart postgresql@17
+```
+
 ## File Access Scope
 
 We will only access the user’s home directory, which contains most user-accessible files and data. The home directory includes:
