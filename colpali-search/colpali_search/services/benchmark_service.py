@@ -4,6 +4,7 @@ from typing import List, Optional
 from colpali_search.config import settings
 from colpali_search.services.search_service import SearchService
 from datasets import load_dataset
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class BenchmarkService:
@@ -40,12 +41,14 @@ class BenchmarkService:
         result = round(len(act_set & pred_set) / float(len(act_set)), 2)
         return result
 
-    async def average_recall(self, top_k: int, user_id: int) -> float:
+    async def average_recall(
+        self, top_k: int, user_id: int, session: AsyncSession
+    ) -> float:
         """Mean of recall scores across multiple queries"""
         total_recall = 0
         for query, page in zip(self.queries, self.actual_pages):
             response = await self.search_service.search(
-                query=query, top_k=top_k, user_id=user_id
+                query=query, top_k=top_k, user_id=user_id, session=session
             )
             predicted = [res["page_number"] for res in response]
             recall_score = self.recall([page], predicted, top_k)
@@ -53,24 +56,24 @@ class BenchmarkService:
         average_recall = total_recall / len(self.queries)
         return average_recall
 
-    async def precision(self, top_k: int, user_id: int):
+    async def precision(self, top_k: int, user_id: int, session: AsyncSession):
         """Measure the proportion of retrieved documents that are relevant"""
         correct = 0
         for query, page in zip(self.queries, self.actual_pages):
             response = await self.search_service.search(
-                query=query, top_k=top_k, user_id=user_id
+                query=query, top_k=top_k, user_id=user_id, session=session
             )
             predicted = [res["page_number"] for res in response]
             if page in predicted:
                 correct += 1
         return correct / len(self.queries)
 
-    async def mrr(self, top_k: int, user_id: int):
+    async def mrr(self, top_k: int, user_id: int, session: AsyncSession):
         """Average the reciprocal ranks of the first relevant document retrieved across multiple queries"""
         total_rank = 0
         for query, page in zip(self.queries, self.actual_pages):
             response = await self.search_service.search(
-                query=query, top_k=top_k, user_id=user_id
+                query=query, top_k=top_k, user_id=user_id, session=session
             )
             predicted = [res["page_number"] for res in response]
             rank = 1 / (predicted.index(page) + 1) if page in predicted else 0

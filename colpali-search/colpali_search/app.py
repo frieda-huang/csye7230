@@ -110,10 +110,13 @@ async def benchmark(
     top_k: int,
     benchmark_service: BenchmarkServiceDep,
     user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
 ) -> BenchmarkResponse:
-    average_recall_score = await benchmark_service.average_recall(top_k, user_id)
-    precision_score = await benchmark_service.precision(top_k, user_id)
-    mrr_score = await benchmark_service.mrr(top_k, user_id)
+    average_recall_score = await benchmark_service.average_recall(
+        top_k, user_id, session
+    )
+    precision_score = await benchmark_service.precision(top_k, user_id, session)
+    mrr_score = await benchmark_service.mrr(top_k, user_id, session)
 
     return BenchmarkResponse(
         average_recall_score=average_recall_score,
