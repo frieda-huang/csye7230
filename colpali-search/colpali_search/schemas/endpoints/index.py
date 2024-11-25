@@ -13,3 +13,9 @@ class ResetIndexResponse(CustomBaseModel):
     status: str
     message: str
     reset_time: datetime.datetime
+
+
+class GetCurrentIndexStrategyResponse(CustomBaseModel):
+    status: str
+    name: str
+    message: str

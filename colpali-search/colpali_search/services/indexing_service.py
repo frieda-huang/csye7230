@@ -51,5 +51,5 @@ class IndexingService:
             strategy_name, session
         )
 
-    async def reset_strategy(self):
-        await self.indexing_strategy_repository.reset_strategy()
+    async def reset_strategy(self, session: AsyncSession):
+        await self.indexing_strategy_repository.reset_strategy(session)

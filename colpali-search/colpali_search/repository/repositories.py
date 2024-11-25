@@ -139,6 +139,7 @@ class IndexingStrategyRepository(Repository[IndexingStrategy]):
         self, strategy: IndexingStrategy, session: AsyncSession
     ) -> IndexingStrategy:
         session.add(strategy)
+        await session.commit()
         return strategy
 
     async def get_current_strategy(self, session: AsyncSession) -> IndexingStrategy:
