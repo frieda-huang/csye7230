@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 
 from colpali_search.context import app_context, initialize_context
-from colpali_search.database import async_session
+from colpali_search.database import async_session, get_session
 from colpali_search.dependencies import BenchmarkServiceDep, SearchSerivceDep
 from colpali_search.models import User
 from colpali_search.routers import embeddings, files, index
@@ -13,6 +13,7 @@ from colpali_search.schemas.endpoints.search import (
 )
 from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 description = """
 ColPali Search API for searching local PDF files using natural language. 🚀
@@ -92,11 +93,12 @@ async def search(
     body: SearchRequest,
     search_service: SearchSerivceDep,
     user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
 ) -> SearchResponse:
     query, top_k = body.query, body.top_k
 
     try:
-        result = await search_service.search(user_id, query, top_k)
+        result = await search_service.search(user_id, query, top_k, session)
         return SearchResponse(result=[SearchResult(**item) for item in result])
 
     except Exception as e:

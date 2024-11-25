@@ -24,25 +24,25 @@ from sqlalchemy import select
 @pytest.mark.asyncio
 async def test_file_repository_get_by_filename(seed, async_session):
     filename = "test.pdf"
-    file_repo = FileRepository(File, async_session)
-    file = await file_repo.get_by_filename(filename)
+    file_repo = FileRepository(File)
+    file = await file_repo.get_by_filename(filename, async_session)
 
     assert file.filename == filename
 
 
 @pytest.mark.asyncio
 async def test_file_repository_get_by_id(seed, async_session):
-    file_repo = FileRepository(File, async_session)
-    file = await file_repo.get_by_id(id=1)
+    file_repo = FileRepository(File)
+    file = await file_repo.get_by_id(id=1, session=async_session)
 
     assert file.filename == "test.pdf"
 
 
 @pytest.mark.asyncio
 async def test_file_repository_add(seed, async_session):
-    file_repo = FileRepository(File, async_session)
+    file_repo = FileRepository(File)
     filename, total_pages = "hnsw.pdf", 10
-    file = await file_repo.add(filename, total_pages)
+    file = await file_repo.add(filename, total_pages, async_session)
 
     assert file.filename == filename
     assert file.total_pages == total_pages
@@ -50,32 +50,32 @@ async def test_file_repository_add(seed, async_session):
 
 @pytest.mark.asyncio
 async def test_page_repository_get_by_page_number_and_file(seed, async_session):
-    page_repo = PageRepository(Page, async_session)
-    file_repo = FileRepository(File, async_session)
-    file = await file_repo.get_by_id(id=1)
-    page = await page_repo.get_by_page_number_and_file(1, file)
+    page_repo = PageRepository(Page)
+    file_repo = FileRepository(File)
+    file = await file_repo.get_by_id(id=1, session=async_session)
+    page = await page_repo.get_by_page_number_and_file(1, file, async_session)
 
     assert page.file.id == file.id
 
 
 @pytest.mark.asyncio
 async def test_page_repository_add(seed, async_session):
-    page_repo = PageRepository(Page, async_session)
-    file_repo = FileRepository(File, async_session)
-    file = await file_repo.get_by_id(id=1)
-    page = await page_repo.add(2, file)
+    page_repo = PageRepository(Page)
+    file_repo = FileRepository(File)
+    file = await file_repo.get_by_id(id=1, session=async_session)
+    page = await page_repo.add(2, file, session=async_session)
 
     assert page.file.filename == file.filename
 
 
 @pytest.mark.asyncio
 async def test_embedding_repository_get_by_page(seed, async_session):
-    embedding_repo = EmbeddingRepository(Embedding, async_session)
-    page_repo = PageRepository(Page, async_session)
-    file_repo = FileRepository(File, async_session)
-    file = await file_repo.get_by_id(id=1)
-    page = await page_repo.get_by_page_number_and_file(1, file)
-    embedding = await embedding_repo.get_by_page(page)
+    embedding_repo = EmbeddingRepository(Embedding)
+    page_repo = PageRepository(Page)
+    file_repo = FileRepository(File)
+    file = await file_repo.get_by_id(id=1, session=async_session)
+    page = await page_repo.get_by_page_number_and_file(1, file, async_session)
+    embedding = await embedding_repo.get_by_page(page, async_session)
 
     assert np.array_equal(
         embedding.vector_embedding[0].tolist(), np.array([1.0] * 128, dtype=np.float16)
@@ -85,16 +85,16 @@ async def test_embedding_repository_get_by_page(seed, async_session):
 @pytest.mark.asyncio
 async def test_delete_by_page(seed, async_session):
     # Create repositories
-    page_repo = PageRepository(Page, async_session)
-    embedding_repo = EmbeddingRepository(Embedding, async_session)
+    page_repo = PageRepository(Page)
+    embedding_repo = EmbeddingRepository(Embedding)
 
     # Add a file
     file = await async_session.execute(select(File))
     file = file.scalar()
 
     # Add two pages
-    page1 = await page_repo.add(1, file)
-    page2 = await page_repo.add(2, file)
+    page1 = await page_repo.add(1, file, async_session)
+    page2 = await page_repo.add(2, file, async_session)
 
     # Add embeddings for each page
     embedding1 = Embedding(
@@ -118,7 +118,7 @@ async def test_delete_by_page(seed, async_session):
     assert len(embeddings_before) == 3  # All three embeddings should exist
 
     # Delete embeddings for page1
-    await embedding_repo.delete_by_page(page1)
+    await embedding_repo.delete_by_page(page1, async_session)
     await async_session.commit()
 
     # Verify only embedding2 and embedding from conftest remain
@@ -131,15 +131,17 @@ async def test_delete_by_page(seed, async_session):
 @pytest.mark.asyncio
 async def test_add_or_replace_no_existing_embedding(seed, async_session):
 
-    embedding_repo = EmbeddingRepository(Embedding, async_session)
-    page_repo = PageRepository(Page, async_session)
+    embedding_repo = EmbeddingRepository(Embedding)
+    page_repo = PageRepository(Page)
 
     file = await async_session.execute(select(File))
     file = file.scalar()
-    page = await page_repo.add(1, file)
+    page = await page_repo.add(1, file, async_session)
 
     vector_embedding = [np.array([1.0] * 128, dtype=np.float32)]
-    new_embedding = await embedding_repo.add_or_replace(vector_embedding, page)
+    new_embedding = await embedding_repo.add_or_replace(
+        vector_embedding, page, async_session
+    )
 
     result = await async_session.execute(
         select(Embedding).where(Embedding.page_id == page.id)
@@ -153,18 +155,20 @@ async def test_add_or_replace_no_existing_embedding(seed, async_session):
 
 @pytest.mark.asyncio
 async def test_add_or_replace_existing_embedding(seed, async_session):
-    embedding_repo = EmbeddingRepository(Embedding, async_session)
-    page_repo = PageRepository(Page, async_session)
+    embedding_repo = EmbeddingRepository(Embedding)
+    page_repo = PageRepository(Page)
 
     file = await async_session.execute(select(File))
     file = file.scalar()
-    page = await page_repo.add(1, file)
+    page = await page_repo.add(1, file, async_session)
 
     old_vector_embedding = [np.array([1.0] * 128, dtype=np.float32)]
-    old_embedding = await embedding_repo.add(old_vector_embedding, page)
+    old_embedding = await embedding_repo.add(old_vector_embedding, page, async_session)
 
     new_vector_embedding = [np.array([2.0] * 128, dtype=np.float32)]
-    new_embedding = await embedding_repo.add_or_replace(new_vector_embedding, page)
+    new_embedding = await embedding_repo.add_or_replace(
+        new_vector_embedding, page, async_session
+    )
 
     result = await async_session.execute(
         select(Embedding).where(Embedding.page_id == page.id)
@@ -180,10 +184,8 @@ async def test_add_or_replace_existing_embedding(seed, async_session):
 
 @pytest.mark.asyncio
 async def test_delete_by_embedding(seed, async_session):
-    EmbeddingRepository(Embedding, async_session)
-    flattened_embedding_repo = FlattenedEmbeddingRepository(
-        FlattenedEmbedding, async_session
-    )
+    EmbeddingRepository(Embedding)
+    flattened_embedding_repo = FlattenedEmbeddingRepository(FlattenedEmbedding)
 
     file = await async_session.execute(select(File))
     file = file.scalar()
@@ -226,7 +228,7 @@ async def test_delete_by_embedding(seed, async_session):
     assert len(flattened_embeddings) == 2
 
     # Call delete_by_embedding
-    await flattened_embedding_repo.delete_by_embedding(embedding)
+    await flattened_embedding_repo.delete_by_embedding(embedding, async_session)
     await async_session.commit()
 
     # Verify the FlattenedEmbeddings are deleted
@@ -246,10 +248,8 @@ async def test_delete_by_embedding(seed, async_session):
 
 @pytest.mark.asyncio
 async def test_add_or_replace(seed, async_session):
-    flattened_embedding_repo = FlattenedEmbeddingRepository(
-        FlattenedEmbedding, async_session
-    )
-    EmbeddingRepository(Embedding, async_session)
+    flattened_embedding_repo = FlattenedEmbeddingRepository(FlattenedEmbedding)
+    EmbeddingRepository(Embedding)
 
     result = await async_session.execute(select(Embedding))
     embedding = result.scalar()
@@ -271,6 +271,7 @@ async def test_add_or_replace(seed, async_session):
     await flattened_embedding_repo.add_or_replace(
         vector_embedding=new_vector_embedding,
         embedding=embedding,
+        session=async_session,
     )
     await async_session.commit()
 
@@ -291,7 +292,7 @@ async def test_add_or_replace(seed, async_session):
 
 @pytest.mark.asyncio
 async def test_query_repository_add(seed, async_session):
-    query_repo = QueryRepository(Query, async_session)
+    query_repo = QueryRepository(Query)
 
     query_text = "What is the meaning of life?"
     query_embeddings = [
@@ -300,7 +301,9 @@ async def test_query_repository_add(seed, async_session):
     ]
     user_id = 1
 
-    new_query = await query_repo.add(query_text, query_embeddings, user_id)
+    new_query = await query_repo.add(
+        query_text, query_embeddings, user_id, async_session
+    )
     await async_session.commit()
 
     # Verify the Query object was added
@@ -317,10 +320,10 @@ async def test_query_repository_add(seed, async_session):
 
 @pytest.mark.asyncio
 async def test_indexing_strategy_repository_add(seed, async_session):
-    repo = IndexingStrategyRepository(IndexingStrategy, async_session)
+    repo = IndexingStrategyRepository(IndexingStrategy)
 
     strategy = IndexingStrategy(strategy_name="ExactMaxSim", created_at=get_now())
-    added_strategy = await repo.add(strategy)
+    added_strategy = await repo.add(strategy, async_session)
     await async_session.commit()
 
     result = await async_session.execute(
@@ -334,9 +337,9 @@ async def test_indexing_strategy_repository_add(seed, async_session):
 
 @pytest.mark.asyncio
 async def test_indexing_strategy_repository_get_current_strategy(seed, async_session):
-    repo = IndexingStrategyRepository(IndexingStrategy, async_session)
+    repo = IndexingStrategyRepository(IndexingStrategy)
 
-    current_strategy = await repo.get_current_strategy()
+    current_strategy = await repo.get_current_strategy(async_session)
 
     assert current_strategy is not None
     assert current_strategy.id == 1
@@ -345,10 +348,11 @@ async def test_indexing_strategy_repository_get_current_strategy(seed, async_ses
 
 @pytest.mark.asyncio
 async def test_indexing_strategy_repository_configure_strategy(seed, async_session):
-    repo = IndexingStrategyRepository(IndexingStrategy, async_session)
+    repo = IndexingStrategyRepository(IndexingStrategy)
 
     await repo.configure_strategy(
-        IndexingStrategyType.hnsw_binary_quantization_hamming_distance
+        IndexingStrategyType.hnsw_binary_quantization_hamming_distance,
+        session=async_session,
     )
     await async_session.commit()
 
@@ -363,9 +367,9 @@ async def test_indexing_strategy_repository_configure_strategy(seed, async_sessi
 
 @pytest.mark.asyncio
 async def test_indexing_strategy_repository_reset_strategy(seed, async_session):
-    repo = IndexingStrategyRepository(IndexingStrategy, async_session)
+    repo = IndexingStrategyRepository(IndexingStrategy)
 
-    await repo.reset_strategy()
+    await repo.reset_strategy(async_session)
     await async_session.commit()
 
     result = await async_session.execute(

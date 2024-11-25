@@ -1,6 +1,7 @@
 import asyncio
 from typing import Callable, List, Optional
 
+from colpali_search.database import get_session
 from colpali_search.dependencies import (
     EmbeddingSerivceDep,
     ModelServiceDep,
@@ -10,6 +11,7 @@ from colpali_search.schemas.endpoints.embeddings import EmbeddingsResponse
 from colpali_search.schemas.internal.pdf import PDFsConversion
 from colpali_search.utils import convert_tensors_to_list_of_lists
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
 
 embeddings_router = APIRouter(prefix="/embeddings", tags=["embeddings"])
 
@@ -45,6 +47,7 @@ async def generate_embeddings_for_file(
     embedding_service: EmbeddingSerivceDep,
     pdf_conversion_service: PDFConversionServiceDep,
     file: UploadFile = Depends(FileValidator.validate_file),
+    session: AsyncSession = Depends(get_session),
 ) -> EmbeddingsResponse:
     try:
         loop = asyncio.get_running_loop()
@@ -57,7 +60,7 @@ async def generate_embeddings_for_file(
         embeddings = model_service.embed_images([images], [metadata])
 
         await embedding_service.upsert_doc_embeddings(
-            embeddings=embeddings, metadata=metadata
+            embeddings=embeddings, metadata=metadata, session=session
         )
 
         return EmbeddingsResponse(
@@ -78,12 +81,13 @@ async def generate_embeddings_for_files(
     embedding_service: EmbeddingSerivceDep,
     pdf_conversion_service: PDFConversionServiceDep,
     files: List[UploadFile] = Depends(FileValidator.validate_files),
+    session: AsyncSession = Depends(get_session),
 ) -> EmbeddingsResponse:
     def pdf_conversion_func():
         return pdf_conversion_service.convert_pdfs2image(files)
 
     return await process_embeddings(
-        model_service, embedding_service, pdf_conversion_func
+        model_service, embedding_service, pdf_conversion_func, session
     )
 
 
@@ -92,10 +96,11 @@ async def generate_embeddings_for_benchmark(
     model_service: ModelServiceDep,
     embedding_service: EmbeddingSerivceDep,
     pdf_conversion_service: PDFConversionServiceDep,
+    session: AsyncSession = Depends(get_session),
 ) -> EmbeddingsResponse:
     pdf_conversion_func = pdf_conversion_service.retrieve_pdfImage_from_vidore
     return await process_embeddings(
-        model_service, embedding_service, pdf_conversion_func
+        model_service, embedding_service, pdf_conversion_func, session
     )
 
 
@@ -103,6 +108,7 @@ async def process_embeddings(
     model_service: ModelServiceDep,
     embedding_service: EmbeddingSerivceDep,
     pdf_conversion_func: Callable[[Optional[List[UploadFile]]], PDFsConversion],
+    session: AsyncSession,
 ) -> EmbeddingsResponse:
     try:
         loop = asyncio.get_running_loop()
@@ -114,7 +120,7 @@ async def process_embeddings(
         metadata = [item for sublist in metadata_list for item in sublist]
 
         await embedding_service.upsert_doc_embeddings(
-            embeddings=embeddings, metadata=metadata
+            embeddings=embeddings, metadata=metadata, session=session
         )
 
         return EmbeddingsResponse(

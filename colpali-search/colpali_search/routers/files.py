@@ -1,8 +1,10 @@
 from typing import List
 
+from colpali_search.database import get_session
 from colpali_search.dependencies import FileServiceDep
 from colpali_search.schemas.endpoints.file import FileResultResponse
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 
 files_router = APIRouter(prefix="/files", tags=["files"])
 
@@ -10,9 +12,10 @@ files_router = APIRouter(prefix="/files", tags=["files"])
 @files_router.get("/")
 async def get_all_files(
     file_service: FileServiceDep,
+    session: AsyncSession = Depends(get_session),
 ) -> List[FileResultResponse]:
     try:
-        files = await file_service.get_all_files()
+        files = await file_service.get_all_files(session)
         return [FileResultResponse.model_validate(file) for file in files]
     except Exception as e:
         raise HTTPException(
@@ -34,9 +37,13 @@ async def get_file_by_id(id: int, file_service: FileServiceDep) -> FileResultRes
 
 
 @files_router.delete("/{id}")
-async def delete_file_by_id(id: int, file_service: FileServiceDep):
+async def delete_file_by_id(
+    id: int,
+    file_service: FileServiceDep,
+    session: AsyncSession = Depends(get_session),
+):
     try:
-        await file_service.delete_file_by_id(id)
+        await file_service.delete_file_by_id(id, session)
         return {"success": "Deleted"}
     except Exception as e:
         raise HTTPException(

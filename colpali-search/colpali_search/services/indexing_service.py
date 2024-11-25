@@ -6,15 +6,11 @@ from colpali_search.services.search_engine.strategy_factory import (
 )
 from colpali_search.types import IndexingStrategyType
 from loguru import logger
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class IndexingService:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-        self.indexing_strategy_repository = IndexingStrategyRepository(
-            IndexingStrategy, session=session
-        )
+    def __init__(self):
+        self.indexing_strategy_repository = IndexingStrategyRepository(IndexingStrategy)
 
     def _create_context(self, strategy_type: IndexingStrategyType) -> IndexingContext:
         if not isinstance(strategy_type, IndexingStrategyType):
