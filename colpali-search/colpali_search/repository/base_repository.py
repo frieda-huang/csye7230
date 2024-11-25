@@ -16,6 +16,7 @@ class Repository[T](ABC):
         instance = await session.get(self.model, id)
         if instance:
             await session.delete(instance)
+            await session.commit()
 
     @abstractmethod
     async def add(self, session: AsyncSession, **kwargs: object) -> T:
