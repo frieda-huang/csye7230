@@ -6,6 +6,7 @@ from colpali_search.services.search_engine.strategy_factory import (
 )
 from colpali_search.types import IndexingStrategyType
 from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class IndexingService:
@@ -20,8 +21,8 @@ class IndexingService:
             IndexingStrategyFactory.create_strategy(strategy_type.alias)
         )
 
-    async def get_current_strategy(self):
-        await self.indexing_strategy_repository.get_current_strategy()
+    async def get_current_strategy(self, session: AsyncSession) -> IndexingStrategy:
+        return await self.indexing_strategy_repository.get_current_strategy(session)
 
     async def build_index(
         self,

@@ -31,6 +31,11 @@ class FileValidator:
 
     @classmethod
     def validate_file(cls, file: UploadFile) -> UploadFile:
+        if not file:
+            raise HTTPException(
+                status_code=422,
+                detail="File not provided. Please upload a valid file.",
+            )
         cls._validate_file_type(file)
         return file
 

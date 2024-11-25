@@ -1,7 +1,7 @@
 import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 
 class SearchResult(BaseModel):
@@ -16,9 +16,24 @@ class SearchResult(BaseModel):
 
 
 class SearchRequest(BaseModel):
-    query: str
-    top_k: int
+    query: str = Field(
+        ..., min_length=1, description="The search query must not be empty."
+    )
+    top_k: int = Field(..., gt=0, description="top_k must be greater than 0.")
     email: EmailStr
+
+    @model_validator(mode="before")
+    def validate_query_and_top_k(cls, values):
+        query = values.get("query")
+        top_k = values.get("top_k")
+
+        if not query or query.strip() == "":
+            raise ValueError("Query cannot be empty or only whitespace.")
+
+        if top_k <= 0:
+            raise ValueError("top_k must be greater than 0.")
+
+        return values
 
 
 class SearchResponse(BaseModel):

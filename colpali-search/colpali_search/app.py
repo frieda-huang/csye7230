@@ -12,6 +12,7 @@ from colpali_search.schemas.endpoints.search import (
     SearchResult,
 )
 from fastapi import APIRouter, Depends, FastAPI, HTTPException
+from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -88,21 +89,24 @@ async def get_current_user(email: str = "colpalisearch@gmail.com") -> int:
         return user.id
 
 
-@api_v1_router.post("/search/{query}")
+@api_v1_router.post("/search")
 async def search(
     body: SearchRequest,
     search_service: SearchSerivceDep,
     user_id: int = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> SearchResponse:
-    query, top_k = body.query, body.top_k
+    logger.info(
+        f"Received search request from user_id={user_id} for query='{body.query}'"
+    )
 
     try:
-        result = await search_service.search(user_id, query, top_k, session)
+        result = await search_service.search(user_id, body.query, body.top_k, session)
         return SearchResponse(result=[SearchResult(**item) for item in result])
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error during search for user_id={user_id}: {e}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
 
 @api_v1_router.post("/benchmark")

@@ -25,9 +25,11 @@ async def get_all_files(
 
 
 @files_router.get("/{id}")
-async def get_file_by_id(id: int, file_service: FileServiceDep) -> FileResultResponse:
+async def get_file_by_id(
+    id: int, file_service: FileServiceDep, session: AsyncSession = Depends(get_session)
+) -> FileResultResponse:
     try:
-        file = await file_service.get_file_by_id(id)
+        file = await file_service.get_file_by_id(id, session)
         return FileResultResponse.model_validate(file)
     except Exception as e:
         raise HTTPException(
