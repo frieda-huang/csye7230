@@ -39,17 +39,17 @@ class IndexingService:
         ctx = self._create_context(strategy_type)
         has_indexes = await ctx.get_indexes()
 
-        if has_indexes:
-            await ctx.execute_drop_indexes()
-        else:
-            raise ValueError(
-                "No indexes found to drop. Ensure that indexing has been built before attempting to drop."
-            )
+        if not has_indexes:
+            return
+
+        await ctx.execute_drop_indexes()
 
     async def configure_strategy(
-        self, strategy_name: IndexingStrategyType
+        self, strategy_name: IndexingStrategyType, session: AsyncSession
     ) -> IndexingStrategy:
-        return await self.indexing_strategy_repository.configure_strategy(strategy_name)
+        return await self.indexing_strategy_repository.configure_strategy(
+            strategy_name, session
+        )
 
     async def reset_strategy(self):
         await self.indexing_strategy_repository.reset_strategy()

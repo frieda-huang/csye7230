@@ -156,10 +156,8 @@ class IndexingStrategyRepository(Repository[IndexingStrategy]):
             strategy.created_at = get_now()
             await session.commit()
         else:
-            strategy = IndexingStrategy(
-                id=1, strategy_name=name, current_time=get_now()
-            )
-            await self.add(strategy)
+            strategy = IndexingStrategy(id=1, strategy_name=name, created_at=get_now())
+            await self.add(strategy, session)
 
         return strategy
 
