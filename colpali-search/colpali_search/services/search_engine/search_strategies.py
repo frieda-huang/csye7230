@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 import psycopg
-from colpali_search.database import DBNAME
+from colpali_search.database import DatabaseConfig
 from colpali_search.services.search_engine.distance_metrics import (
     CosineSimilarity,
     HammingDistance,
@@ -24,6 +24,9 @@ def log_row(row: Row):
 async def execute_postgresql_search_command(
     command: str, query_embeddings: VectorList
 ) -> List[Row]:
+    DBNAME = DatabaseConfig.DBNAME
+
+    logger.info(f"Using database: {DBNAME}")
     conn = await psycopg.AsyncConnection.connect(
         dbname=DBNAME, autocommit=True, row_factory=dict_row
     )

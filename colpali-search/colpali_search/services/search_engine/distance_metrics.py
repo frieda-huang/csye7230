@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
 
 import psycopg
-from colpali_search.database import DBNAME
+from colpali_search.database import DatabaseConfig
 from colpali_search.models import VECT_DIM
 from pgvector.psycopg import register_vector
 
 
 def execute_postgresql_distance_metrics_command(command: str):
+    DBNAME = DatabaseConfig.DBNAME
     with psycopg.connect(dbname=DBNAME, autocommit=True) as conn:
         register_vector(conn)
         conn.execute(command)

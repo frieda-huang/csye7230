@@ -98,10 +98,8 @@ async def test_search(async_client, setup_dummy_files):
     response = await async_client.post("/api/v1/search", json=search_request)
     data = response.json()
 
-    print(data)
-
-    data["result"][0]["filename"] == "Attention_Is_All_You_Need.pdf"
-    data["result"][0]["total_pages"] == 15
+    assert data["result"][0]["filename"] == "Attention_Is_All_You_Need.pdf"
+    assert data["result"][0]["total_pages"] == 15
 
 
 @pytest.mark.asyncio
@@ -152,8 +150,6 @@ async def test_delete_file_by_id(async_client, setup_dummy_files):
 
     files_response = await async_client.get("/api/v1/files/")
     files_data = files_response.json()
-
-    print(files_data)
 
     assert len(files_data) == 2
     assert files_data[0]["filename"] == "simd.pdf"

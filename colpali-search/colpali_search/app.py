@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 
 from colpali_search.context import app_context, initialize_context
-from colpali_search.database import async_session, get_session
+from colpali_search.database import get_session
 from colpali_search.dependencies import BenchmarkServiceDep, SearchSerivceDep
 from colpali_search.models import User
 from colpali_search.routers import embeddings, files, index
@@ -48,6 +48,7 @@ You will be able to:
 * **List all supported index strategies**
 * **Configure index strategy**
 * **Reset index strategy**
+* **Get current index strategy**
 """
 
 
@@ -79,14 +80,16 @@ api_v1_router.include_router(files.files_router)
 api_v1_router.include_router(index.index_router)
 
 
-async def get_current_user(email: str = "colpalisearch@gmail.com") -> int:
-    async with async_session.begin() as session:
-        stmt = select(User).where(User.email == email)
-        result = await session.execute(stmt)
-        user = result.scalar_one_or_none()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        return user.id
+async def get_current_user(
+    email: str = "colpalisearch@gmail.com",
+    session: AsyncSession = Depends(get_session),
+) -> int:
+    stmt = select(User).where(User.email == email)
+    result = await session.execute(stmt)
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user.id
 
 
 @api_v1_router.post("/search")

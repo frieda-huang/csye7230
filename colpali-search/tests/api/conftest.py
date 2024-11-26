@@ -5,7 +5,7 @@ import pytest_asyncio
 from colpali_search.app import app, get_current_user
 from colpali_search.config import settings
 from colpali_search.context import initialize_context
-from colpali_search.database import get_session
+from colpali_search.database import DatabaseConfig, get_session
 from colpali_search.models import Base, User
 from colpali_search.utils import get_now
 from pgvector.psycopg import register_vector_async
@@ -53,6 +53,14 @@ app.dependency_overrides[get_current_user] = override_get_current_user
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
+
+
+@pytest.fixture(autouse=True)
+def use_test_database():
+    DatabaseConfig.set_dbname("colpalisearch_test")
+    yield
+    # Reset after tests
+    DatabaseConfig.set_dbname("colpalisearch")
 
 
 @pytest_asyncio.fixture(autouse=True)
