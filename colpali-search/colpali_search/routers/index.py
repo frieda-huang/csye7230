@@ -36,6 +36,18 @@ async def list_supported_index_strategies():
 async def get_current_index_strategy(
     indexing_service: IndexingServiceDep, session: AsyncSession = Depends(get_session)
 ):
+    """Retrieve the currently configured indexing strategy
+
+    Args:
+        indexing_service (IndexingServiceDep): Service for managing indexing strategies
+        session (AsyncSession, optional): Database session for executing queries. Defaults to Depends(get_session)
+
+    Raises:
+        HTTPException: If the current indexing strategy cannot be retrieved
+
+    Returns:
+        GetCurrentIndexStrategyResponse: Details of the current indexing strategy, including its name and status
+    """
     try:
         strategy = await indexing_service.get_current_strategy(session)
         name = strategy.strategy_name
@@ -51,6 +63,18 @@ async def get_current_index_strategy(
 async def reset_index_strategy(
     indexing_service: IndexingServiceDep, session: AsyncSession = Depends(get_session)
 ):
+    """Reset the current indexing strategy to its default configuration.
+
+    Args:
+        indexing_service (IndexingServiceDep): Service to manage indexing strategies.
+        session (AsyncSession, optional): Database session for executing queries. Defaults to Depends(get_session).
+
+    Raises:
+        HTTPException: If resetting the strategy fails.
+
+    Returns:
+        ResetIndexResponse: Confirmation of the reset, including the reset time and status.
+    """
     try:
         await indexing_service.reset_strategy(session)
         return ResetIndexResponse(
@@ -68,6 +92,20 @@ async def configure_index_strategy(
     indexing_service: IndexingServiceDep,
     session: AsyncSession = Depends(get_session),
 ):
+    """Configure a specific index strategy for the search system
+
+    Args:
+        strategy (IndexingStrategyType): The desired indexing strategy to configure
+        indexing_service (IndexingServiceDep): Service for managing indexing strategies
+        session (AsyncSession, optional): Database session for executing queries. Defaults to Depends(get_session)
+
+    Raises:
+        HTTPException: If the provided strategy is invalid (422)
+        HTTPException: If configuration fails (400)
+
+    Returns:
+        ConfigureIndexResponse: The configured indexing strategy details
+    """
     try:
         print(strategy)
         if strategy == IndexingStrategyType.exact_maxsim:

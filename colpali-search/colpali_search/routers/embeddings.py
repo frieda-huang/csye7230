@@ -54,6 +54,21 @@ async def generate_embeddings_for_file(
     file: UploadFile = Depends(FileValidator.validate_file),
     session: AsyncSession = Depends(get_session),
 ) -> EmbeddingsResponse:
+    """Generates embeddings for an uploaded PDF file
+
+    Args:
+        model_service (ModelServiceDep): Handles model operations for embedding generation
+        embedding_service (EmbeddingSerivceDep): Manages embedding creation and storage
+        pdf_conversion_service (PDFConversionServiceDep): Converts PDF to images for embedding
+        file (UploadFile): Validated PDF file. Defaults to Depends(FileValidator.validate_file)
+        session (AsyncSession): Database session for embedding operations. Defaults to Depends(get_session)
+
+    Raises:
+        HTTPException: On processing, embedding, or database errors
+
+    Returns:
+        EmbeddingsResponse: Details about the generated embeddings
+    """
     try:
         loop = asyncio.get_running_loop()
 
@@ -88,6 +103,19 @@ async def generate_embeddings_for_files(
     files: List[UploadFile] = Depends(FileValidator.validate_files),
     session: AsyncSession = Depends(get_session),
 ) -> EmbeddingsResponse:
+    """Generates embeddings for a list of uploaded PDF files
+
+    Args:
+        model_service (ModelServiceDep): Handles model operations for embedding generation
+        embedding_service (EmbeddingSerivceDep): Manages embedding creation and storage
+        pdf_conversion_service (PDFConversionServiceDep): Converts PDFs to images for embedding
+        files (List[UploadFile]): Validated PDF files. Defaults to Depends(FileValidator.validate_files)
+        session (AsyncSession): Database session for embedding operations. Defaults to Depends(get_session)
+
+    Returns:
+        EmbeddingsResponse: Details about the embeddings generated for the files.
+    """
+
     def pdf_conversion_func():
         return pdf_conversion_service.convert_pdfs2image(files)
 
@@ -103,6 +131,20 @@ async def generate_embeddings_for_benchmark(
     pdf_conversion_service: PDFConversionServiceDep,
     session: AsyncSession = Depends(get_session),
 ) -> EmbeddingsResponse:
+    """Generate embeddings for benchmark datasets
+
+    Args:
+        model_service (ModelServiceDep): Provides the model for generating embeddings
+        embedding_service (EmbeddingSerivceDep):
+            Handles embedding creation and database storage
+        pdf_conversion_service (PDFConversionServiceDep):
+            Converts benchmark datasets (e.g., PDFs) to images for embedding
+        session (AsyncSession, optional): Database session for storing embeddings.
+            Defaults to Depends(get_session)
+
+    Returns:
+        EmbeddingsResponse: Summary of generated embeddings for benchmark datasets
+    """
     pdf_conversion_func = pdf_conversion_service.retrieve_pdfImage_from_vidore
     return await process_embeddings(
         model_service, embedding_service, pdf_conversion_func, session
@@ -115,6 +157,21 @@ async def process_embeddings(
     pdf_conversion_func: Callable[[Optional[List[UploadFile]]], PDFsConversion],
     session: AsyncSession,
 ) -> EmbeddingsResponse:
+    """Process embeddings for given files by converting PDFs, generating embeddings, and storing them
+
+    Args:
+        model_service (ModelServiceDep): Service for generating embeddings from images
+        embedding_service (EmbeddingSerivceDep): Handles storing embeddings and associated metadata
+        pdf_conversion_func (Callable[[Optional[List[UploadFile]]], PDFsConversion]):
+            Function to convert PDFs to images and metadata
+        session (AsyncSession): Database session for operations
+
+    Raises:
+        HTTPException: If an unexpected error occurs during processing
+
+    Returns:
+        EmbeddingsResponse: Contains success message, embeddings, and metadata
+    """
     try:
         loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(None, pdf_conversion_func)

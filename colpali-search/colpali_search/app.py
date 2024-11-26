@@ -84,6 +84,18 @@ async def get_current_user(
     email: str = "colpalisearch@gmail.com",
     session: AsyncSession = Depends(get_session),
 ) -> int:
+    """Retrieve current user from the database
+
+    Args:
+        email (str, optional): Defaults to "colpalisearch@gmail.com"
+        session (AsyncSession, optional): Defaults to Depends(get_session)
+
+    Raises:
+        HTTPException: Return 404 if user is not found
+
+    Returns:
+        int: a unique user id
+    """
     stmt = select(User).where(User.email == email)
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
@@ -99,6 +111,20 @@ async def search(
     user_id: int = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> SearchResponse:
+    """Search for specific PDF files given a query
+
+    Args:
+        body (SearchRequest): Request includes query, top_k, and email
+        search_service (SearchSerivceDep): Search service dependency
+        user_id (int, optional): Defaults to Depends(get_current_user)
+        session (AsyncSession, optional): Defaults to Depends(get_session)
+
+    Raises:
+        HTTPException: Throw exception if user id is invalid
+
+    Returns:
+        SearchResponse: Contain retrieved file info such as filename, total_pages, etc.
+    """
     logger.info(
         f"Received search request from user_id={user_id} for query='{body.query}'"
     )
@@ -119,6 +145,17 @@ async def benchmark(
     user_id: int = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> BenchmarkResponse:
+    """Benchmark the current RAG system using vidore/syntheticDocQA_artificial_intelligence_test
+
+    Args:
+        top_k (int): Define number of retrieved documents
+        benchmark_service (BenchmarkServiceDep): Benchmark service dependency
+        user_id (int, optional): Defaults to Depends(get_current_user)
+        session (AsyncSession, optional): Defaults to Depends(get_session)
+
+    Returns:
+        BenchmarkResponse: Return average recall score, precision score, and mrr score
+    """
     average_recall_score = await benchmark_service.average_recall(
         top_k, user_id, session
     )
