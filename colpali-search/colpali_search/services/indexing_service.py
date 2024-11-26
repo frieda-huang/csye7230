@@ -4,7 +4,7 @@ from colpali_search.services.search_engine.context import IndexingContext
 from colpali_search.services.search_engine.strategy_factory import (
     IndexingStrategyFactory,
 )
-from colpali_search.types import IndexingStrategyType
+from colpali_search.custom_types import IndexingStrategyType
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 

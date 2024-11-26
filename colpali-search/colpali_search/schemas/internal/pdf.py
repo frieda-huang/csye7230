@@ -1,7 +1,7 @@
 from typing import List, TypeAlias
 
 from colpali_search.schemas.common import ImageMetadata
-from colpali_search.types import CustomBaseModel
+from colpali_search.custom_types import CustomBaseModel
 from PIL import Image
 
 ImageList: TypeAlias = List[List[Image.Image]]

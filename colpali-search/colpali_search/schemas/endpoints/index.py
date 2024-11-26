@@ -1,6 +1,6 @@
 import datetime
 
-from colpali_search.types import CustomBaseModel
+from colpali_search.custom_types import CustomBaseModel
 
 
 class ConfigureIndexResponse(CustomBaseModel):

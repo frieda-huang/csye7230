@@ -9,7 +9,7 @@ from colpali_search.models import (
     Query,
 )
 from colpali_search.repository.base_repository import Repository
-from colpali_search.types import IndexingStrategyType, VectorList
+from colpali_search.custom_types import IndexingStrategyType, VectorList
 from colpali_search.utils import get_now
 from loguru import logger
 from sqlalchemy import delete, select

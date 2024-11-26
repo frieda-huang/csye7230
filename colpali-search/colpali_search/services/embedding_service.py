@@ -21,7 +21,7 @@ from colpali_search.repository.repositories import (
 )
 from colpali_search.schemas.internal.pdf import ImageMetadata
 from colpali_search.services.indexing_service import IndexingService
-from colpali_search.types import IndexingStrategyType, VectorList
+from colpali_search.custom_types import IndexingStrategyType, VectorList
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 

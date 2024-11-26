@@ -8,7 +8,7 @@ from colpali_search.services.search_engine.distance_metrics import (
     HammingDistance,
     MaxSim,
 )
-from colpali_search.types import VectorList
+from colpali_search.custom_types import VectorList
 from loguru import logger
 from pgvector.psycopg import register_vector_async
 from psycopg.cursor import Row

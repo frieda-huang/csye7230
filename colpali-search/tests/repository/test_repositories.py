@@ -16,7 +16,7 @@ from colpali_search.repository.repositories import (
     PageRepository,
     QueryRepository,
 )
-from colpali_search.types import IndexingStrategyType
+from colpali_search.custom_types import IndexingStrategyType
 from colpali_search.utils import get_now
 from sqlalchemy import select
 

@@ -5,7 +5,7 @@ from colpali_search.schemas.endpoints.index import (
     ResetIndexResponse,
     GetCurrentIndexStrategyResponse,
 )
-from colpali_search.types import IndexingStrategyType
+from colpali_search.custom_types import IndexingStrategyType
 from colpali_search.utils import get_now
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
