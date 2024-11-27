@@ -28,11 +28,11 @@ Colpali-Search is a microservice within the SearchAgent app. It functions as a P
 
 3. Seed a user by running `colpali-search/colpali_search/seed_user.py`
 
-4. Build the docker image
-   `docker build -t colpali-search .`
+4. Create a .env file based on example.env
 
-5. Run the docker container
-   `docker run -d -p 8000:8000 --name colpali-search colpali-search`
+5. Run `docker pull postgres:17`
+
+6. Build and start colpali-search and Postgres by running `docker-compose up --build`
 
 ## Testing
 
