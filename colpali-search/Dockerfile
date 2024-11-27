@@ -1,4 +1,7 @@
 FROM python:3.12-slim as base
+
+RUN apt-get update && apt-get install -y poppler-utils && rm -rf /var/lib/apt/lists/*
+
 ENV  POETRY_VERSION=1.6.1 \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
