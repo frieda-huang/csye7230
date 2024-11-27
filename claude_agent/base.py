@@ -5,7 +5,7 @@ from claude_agent.tools import ToolNames, colpali_embed, colpali_search, tools
 from searchagent.utils import project_paths
 
 client = Anthropic()
-MODEL_NAME = "claude-3-opus-20240229"
+MODEL_NAME = "claude-3-5-sonnet-20241022"
 
 
 def process_tool_call(tool_name, tool_input):
