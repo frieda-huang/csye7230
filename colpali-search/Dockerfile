@@ -30,6 +30,7 @@ ENV FASTAPI_ENV=production
 COPY --from=builder $VENV_PATH $VENV_PATH
 COPY ./colpali_search /colpali_search
 COPY .env /colpali_search/
+COPY alembic.ini /colpali_search/
+COPY alembic /colpali_search/alembic
 WORKDIR /colpali_search
 EXPOSE 8000
-CMD ["fastapi", "run", "app.py", "--port", "80", "--workers", "4"]

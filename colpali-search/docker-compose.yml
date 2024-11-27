@@ -8,23 +8,31 @@ services:
             - db
         volumes:
             - ./:/code:ro
+        env_file:
+            - .env
         environment:
-            - DATABASE_URL=postgresql+psycopg://searchagent_user:attentionisallyouneed@db:5432/colpalisearch
+            - DATABASE_URL=${DATABASE_URL}
+            - PYTHONPATH=/code
         ports:
-            - '80:80'
+            - '8000:8000'
+        command: >
+            sh -c "alembic upgrade head && fastapi run app.py --port 8000 --workers 4"
 
     db:
-        image: postgres:17
+        image: pgvector/pgvector:pg17
         restart: always
         volumes:
             - postgres_data:/var/lib/postgresql/data/
             - ./init.sql:/docker-entrypoint-initdb.d/init.sql
         expose:
-            - 5432
+            - 5432:5432
+        env_file:
+            - .env
         environment:
-            - POSTGRES_USER=searchagent_user
-            - POSTGRES_PASSWORD=attentionisallyouneed
-            - POSTGRES_DB=colpalisearch
+            - POSTGRES_USER=${POSTGRES_USER}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            - POSTGRES_DB=${POSTGRES_DB}
+        entrypoint: sh -c "chmod 644 /docker-entrypoint-initdb.d/init.sql && docker-entrypoint.sh postgres"
 
 volumes:
     postgres_data:
