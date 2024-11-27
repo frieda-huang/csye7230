@@ -1,3 +1,4 @@
+import sys
 from contextlib import asynccontextmanager
 
 from colpali_search.context import app_context, initialize_context
@@ -15,6 +16,9 @@ from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger.remove()
+logger.add(sys.stderr, colorize=True)
 
 description = """
 ColPali Search API for searching local PDF files using natural language. 🚀
