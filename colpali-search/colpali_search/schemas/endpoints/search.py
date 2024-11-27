@@ -38,3 +38,14 @@ class SearchRequest(BaseModel):
 
 class SearchResponse(BaseModel):
     result: List[SearchResult]
+
+
+class CreateUserRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class CreateUserResponse(BaseModel):
+    status: str
+    email: EmailStr
+    message: str

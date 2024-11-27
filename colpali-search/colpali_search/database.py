@@ -31,12 +31,6 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-# Enable the pgvector extension
-async def enable_pgvector_extension():
-    async with async_session() as session:
-        await session.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-
-
 async def get_table_names():
     async with async_engine.connect() as conn:
         table_names = await conn.run_sync(

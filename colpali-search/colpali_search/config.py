@@ -12,10 +12,11 @@ class Settings(BaseSettings):
         default="vidore/syntheticDocQA_artificial_intelligence_test",
         description="This dataset includes documents about Artificial Intelligence.",
     )
-    seed_user_password: str = Field(description="Password to seed a dummy user")
     hf_api_key: str
     database_url: str
     test_database_url: str
+
+    model_config = SettingsConfigDict(extra="allow")
 
 
 settings = Settings()

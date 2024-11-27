@@ -8,6 +8,8 @@ from colpali_search.models import User
 from colpali_search.routers import embeddings, files, index
 from colpali_search.schemas.endpoints.benchmark import BenchmarkResponse
 from colpali_search.schemas.endpoints.search import (
+    CreateUserRequest,
+    CreateUserResponse,
     SearchRequest,
     SearchResponse,
     SearchResult,
@@ -171,6 +173,23 @@ async def benchmark(
         precision_score=precision_score,
         mrr_score=mrr_score,
     )
+
+
+@app.get("/create/user")
+async def create_user(body: CreateUserRequest):
+    from colpali_search.seed_user import seed_user_if_not_exists
+
+    try:
+        user = await seed_user_if_not_exists(body.email, body.password)
+        email = user.email
+        return CreateUserResponse(
+            status="success",
+            email=email,
+            message=f"You have successfully created a user with email: {email}",
+        )
+    except Exception as e:
+        logger.error(f"Error when creating a new user: {email}: {e}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
 
 @app.get("/")
