@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     seed_user_password: str = Field(description="Password to seed a dummy user")
     hf_api_key: str
     database_url: str
+    test_database_url: str
 
 
 settings = Settings()

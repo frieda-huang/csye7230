@@ -1,6 +1,6 @@
 import datetime
 
-from colpali_search.types import CustomBaseModel
+from colpali_search.custom_types import CustomBaseModel
 
 
 class ConfigureIndexResponse(CustomBaseModel):
@@ -13,3 +13,9 @@ class ResetIndexResponse(CustomBaseModel):
     status: str
     message: str
     reset_time: datetime.datetime
+
+
+class GetCurrentIndexStrategyResponse(CustomBaseModel):
+    status: str
+    name: str
+    message: str

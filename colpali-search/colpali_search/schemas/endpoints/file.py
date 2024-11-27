@@ -1,7 +1,7 @@
 import datetime
 from typing import Optional
 
-from colpali_search.types import CustomBaseModel
+from colpali_search.custom_types import CustomBaseModel
 
 
 class FileResultResponse(CustomBaseModel):

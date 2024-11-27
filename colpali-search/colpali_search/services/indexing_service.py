@@ -4,17 +4,14 @@ from colpali_search.services.search_engine.context import IndexingContext
 from colpali_search.services.search_engine.strategy_factory import (
     IndexingStrategyFactory,
 )
-from colpali_search.types import IndexingStrategyType
+from colpali_search.custom_types import IndexingStrategyType
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class IndexingService:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-        self.indexing_strategy_repository = IndexingStrategyRepository(
-            IndexingStrategy, session=session
-        )
+    def __init__(self):
+        self.indexing_strategy_repository = IndexingStrategyRepository(IndexingStrategy)
 
     def _create_context(self, strategy_type: IndexingStrategyType) -> IndexingContext:
         if not isinstance(strategy_type, IndexingStrategyType):
@@ -24,8 +21,8 @@ class IndexingService:
             IndexingStrategyFactory.create_strategy(strategy_type.alias)
         )
 
-    async def get_current_strategy(self):
-        await self.indexing_strategy_repository.get_current_strategy()
+    async def get_current_strategy(self, session: AsyncSession) -> IndexingStrategy:
+        return await self.indexing_strategy_repository.get_current_strategy(session)
 
     async def build_index(
         self,
@@ -42,17 +39,17 @@ class IndexingService:
         ctx = self._create_context(strategy_type)
         has_indexes = await ctx.get_indexes()
 
-        if has_indexes:
-            await ctx.execute_drop_indexes()
-        else:
-            raise ValueError(
-                "No indexes found to drop. Ensure that indexing has been built before attempting to drop."
-            )
+        if not has_indexes:
+            return
+
+        await ctx.execute_drop_indexes()
 
     async def configure_strategy(
-        self, strategy_name: IndexingStrategyType
+        self, strategy_name: IndexingStrategyType, session: AsyncSession
     ) -> IndexingStrategy:
-        return await self.indexing_strategy_repository.configure_strategy(strategy_name)
+        return await self.indexing_strategy_repository.configure_strategy(
+            strategy_name, session
+        )
 
-    async def reset_strategy(self):
-        await self.indexing_strategy_repository.reset_strategy()
+    async def reset_strategy(self, session: AsyncSession):
+        await self.indexing_strategy_repository.reset_strategy(session)

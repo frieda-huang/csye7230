@@ -1,7 +1,8 @@
+import sys
 from contextlib import asynccontextmanager
 
 from colpali_search.context import app_context, initialize_context
-from colpali_search.database import async_session
+from colpali_search.database import get_session
 from colpali_search.dependencies import BenchmarkServiceDep, SearchSerivceDep
 from colpali_search.models import User
 from colpali_search.routers import embeddings, files, index
@@ -12,7 +13,12 @@ from colpali_search.schemas.endpoints.search import (
     SearchResult,
 )
 from fastapi import APIRouter, Depends, FastAPI, HTTPException
+from loguru import logger
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+logger.remove()
+logger.add(sys.stderr, colorize=True)
 
 description = """
 ColPali Search API for searching local PDF files using natural language. 🚀
@@ -46,6 +52,7 @@ You will be able to:
 * **List all supported index strategies**
 * **Configure index strategy**
 * **Reset index strategy**
+* **Get current index strategy**
 """
 
 
@@ -77,30 +84,62 @@ api_v1_router.include_router(files.files_router)
 api_v1_router.include_router(index.index_router)
 
 
-async def get_current_user(email: str = "colpalisearch@gmail.com") -> int:
-    async with async_session.begin() as session:
-        stmt = select(User).where(User.email == email)
-        result = await session.execute(stmt)
-        user = result.scalar_one_or_none()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        return user.id
+async def get_current_user(
+    email: str = "colpalisearch@gmail.com",
+    session: AsyncSession = Depends(get_session),
+) -> int:
+    """Retrieve current user from the database
+
+    Args:
+        email (str, optional): Defaults to "colpalisearch@gmail.com"
+        session (AsyncSession, optional): Defaults to Depends(get_session)
+
+    Raises:
+        HTTPException: Return 404 if user is not found
+
+    Returns:
+        int: a unique user id
+    """
+    stmt = select(User).where(User.email == email)
+    result = await session.execute(stmt)
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user.id
 
 
-@api_v1_router.post("/search/{query}")
+@api_v1_router.post("/search")
 async def search(
     body: SearchRequest,
     search_service: SearchSerivceDep,
     user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
 ) -> SearchResponse:
-    query, top_k = body.query, body.top_k
+    """Search for specific PDF files given a query
+
+    Args:
+        body (SearchRequest): Request includes query, top_k, and email
+        search_service (SearchSerivceDep): Search service dependency
+        user_id (int, optional): Defaults to Depends(get_current_user)
+        session (AsyncSession, optional): Defaults to Depends(get_session)
+
+    Raises:
+        HTTPException: Throw exception if user id is invalid
+
+    Returns:
+        SearchResponse: Contain retrieved file info such as filename, total_pages, etc.
+    """
+    logger.info(
+        f"Received search request from user_id={user_id} for query='{body.query}'"
+    )
 
     try:
-        result = await search_service.search(user_id, query, top_k)
+        result = await search_service.search(user_id, body.query, body.top_k, session)
         return SearchResponse(result=[SearchResult(**item) for item in result])
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error during search for user_id={user_id}: {e}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
 
 @api_v1_router.post("/benchmark")
@@ -108,10 +147,24 @@ async def benchmark(
     top_k: int,
     benchmark_service: BenchmarkServiceDep,
     user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
 ) -> BenchmarkResponse:
-    average_recall_score = await benchmark_service.average_recall(top_k, user_id)
-    precision_score = await benchmark_service.precision(top_k, user_id)
-    mrr_score = await benchmark_service.mrr(top_k, user_id)
+    """Benchmark the current RAG system using vidore/syntheticDocQA_artificial_intelligence_test
+
+    Args:
+        top_k (int): Define number of retrieved documents
+        benchmark_service (BenchmarkServiceDep): Benchmark service dependency
+        user_id (int, optional): Defaults to Depends(get_current_user)
+        session (AsyncSession, optional): Defaults to Depends(get_session)
+
+    Returns:
+        BenchmarkResponse: Return average recall score, precision score, and mrr score
+    """
+    average_recall_score = await benchmark_service.average_recall(
+        top_k, user_id, session
+    )
+    precision_score = await benchmark_service.precision(top_k, user_id, session)
+    mrr_score = await benchmark_service.mrr(top_k, user_id, session)
 
     return BenchmarkResponse(
         average_recall_score=average_recall_score,
