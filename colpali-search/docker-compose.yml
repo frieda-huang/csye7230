@@ -1,0 +1,30 @@
+version: '3.9'
+
+services:
+    fastapi:
+        build: .
+        container_name: colpali-search
+        depends_on:
+            - db
+        volumes:
+            - ./:/code:ro
+        environment:
+            - DATABASE_URL=postgresql+psycopg://searchagent_user:attentionisallyouneed@db:5432/colpalisearch
+        ports:
+            - '80:80'
+
+    db:
+        image: postgres:17
+        restart: always
+        volumes:
+            - postgres_data:/var/lib/postgresql/data/
+            - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+        expose:
+            - 5432
+        environment:
+            - POSTGRES_USER=searchagent_user
+            - POSTGRES_PASSWORD=attentionisallyouneed
+            - POSTGRES_DB=colpalisearch
+
+volumes:
+    postgres_data:
