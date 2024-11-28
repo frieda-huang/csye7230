@@ -2,11 +2,11 @@ from abc import ABC, abstractmethod
 from typing import List
 
 import psycopg
-from colpali_search.database import DatabaseConfig
 from colpali_search.models import VECT_DIM
 from loguru import logger
 from pgvector.psycopg import register_vector_async
 from psycopg.cursor import Row
+from colpali_search.database import conn_params
 
 SQL_GET_INDEXES = """
 SELECT indexname
@@ -18,9 +18,7 @@ AND indexname != 'flattened_embedding_pkey'
 
 
 async def execute_postgresql_indexing_command(command: str):
-    DBNAME = DatabaseConfig.DBNAME
-    conn = await psycopg.AsyncConnection.connect(dbname=DBNAME, autocommit=True)
-
+    conn = await psycopg.AsyncConnection.connect(**conn_params, autocommit=True)
     async with conn:
         await register_vector_async(conn)
         await conn.execute(command)
@@ -32,8 +30,7 @@ class IndexingStrategy(ABC):
         pass
 
     async def get_indexes(self) -> List[Row]:
-        DBNAME = DatabaseConfig.DBNAME
-        conn = await psycopg.AsyncConnection.connect(dbname=DBNAME, autocommit=True)
+        conn = await psycopg.AsyncConnection.connect(**conn_params, autocommit=True)
 
         async with conn:
             await register_vector_async(conn)

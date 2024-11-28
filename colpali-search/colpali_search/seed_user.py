@@ -26,6 +26,10 @@ async def add_new_user(session: AsyncSession, email: str, password: str) -> User
 
 async def seed_user_if_not_exists(email: EmailStr, password: str):
     async with async_session.begin() as session:
+        connection = await session.connection()
+        logger.info(
+            f"Session in {seed_user_if_not_exists.__name__} has began: {connection.engine.url}"
+        )
         stmt = select(User).where(User.email == email)
 
         result = await session.execute(stmt)

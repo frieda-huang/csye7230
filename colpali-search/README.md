@@ -22,17 +22,20 @@ Colpali-Search is a microservice within the SearchAgent app. It functions as a P
 
 ## Local setup
 
-1. Run `poetry install`
+1. Create a .env file based on example.env
 
-2. Create a .env file based on example.env
+2. Run `docker pull pgvector/pgvector:pg17` to add pgvector to the Postgres image
 
-3. Seed a user by running `colpali-search/colpali_search/seed_user.py`
+3. Build and start colpali-search and Postgres by running `docker-compose up --build`
 
-4. Create a .env file based on example.env
+**Or rebuild the docker image and restart the containers by running**
 
-5. Run `docker pull postgres:17`
+```
+docker-compose down
+docker-compose up --build
+```
 
-6. Build and start colpali-search and Postgres by running `docker-compose up --build`
+4. Seed initial user by calling the endpoing `/user/create`. This creates the `user_id` required for making a POST request to `/search`
 
 ## Testing
 

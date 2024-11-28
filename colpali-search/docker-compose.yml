@@ -1,11 +1,12 @@
-version: '3.9'
-
 services:
     fastapi:
         build: .
         container_name: colpali-search
         depends_on:
-            - db
+            db:
+                condition: service_healthy
+        networks:
+            - app-network
         volumes:
             - ./:/code:ro
         env_file:
@@ -24,8 +25,10 @@ services:
         volumes:
             - postgres_data:/var/lib/postgresql/data/
             - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-        expose:
+        ports:
             - 5432:5432
+        networks:
+            - app-network
         env_file:
             - .env
         environment:
@@ -33,6 +36,17 @@ services:
             - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
             - POSTGRES_DB=${POSTGRES_DB}
         entrypoint: sh -c "chmod 644 /docker-entrypoint-initdb.d/init.sql && docker-entrypoint.sh postgres"
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}',
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+networks:
+    app-network:
 
 volumes:
     postgres_data:

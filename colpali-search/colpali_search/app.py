@@ -14,6 +14,7 @@ from colpali_search.schemas.endpoints.search import (
     SearchResponse,
     SearchResult,
 )
+from colpali_search.seed_user import seed_user_if_not_exists
 from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from loguru import logger
 from sqlalchemy import select
@@ -175,10 +176,26 @@ async def benchmark(
     )
 
 
-@app.get("/create/user")
+@app.post("/user/create")
 async def create_user(body: CreateUserRequest):
-    from colpali_search.seed_user import seed_user_if_not_exists
+    """Creates a new user in the system.
 
+    This endpoint allows clients to create a new user by providing an email
+    and password. If the user already exists, a success message is returned
+    with the existing user information.
+
+    Args:
+        body (CreateUserRequest): The request body containing the user's email
+        and password.
+
+    Raises:
+        HTTPException: If an unexpected error occurs during user creation,
+        a 500 Internal Server Error is returned.
+
+    Returns:
+        CreateUserResponse: A response containing the status, email of the
+        created user, and a success message.
+    """
     try:
         user = await seed_user_if_not_exists(body.email, body.password)
         email = user.email
