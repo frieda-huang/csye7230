@@ -34,3 +34,5 @@ COPY alembic.ini /colpali_search/
 COPY alembic /colpali_search/alembic
 WORKDIR /colpali_search
 EXPOSE 8000
+# Remove the following when running docker-compose.yml
+CMD ["fastapi", "run", "app.py", "--port", "8000", "--workers", "1"]
