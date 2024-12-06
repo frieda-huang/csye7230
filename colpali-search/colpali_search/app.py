@@ -205,7 +205,7 @@ async def create_user(body: CreateUserRequest):
             message=f"You have successfully created a user with email: {email}",
         )
     except Exception as e:
-        logger.error(f"Error when creating a new user: {email}: {e}")
+        logger.error(f"Error when creating a new user: {body.email}: {e}")
         raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
 
