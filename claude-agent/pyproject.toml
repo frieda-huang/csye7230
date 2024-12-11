@@ -14,3 +14,6 @@ dependencies = [
 [tool.uv.workspace]
 members = ["claude-agent"]
 
+[project.scripts]
+searchagent = "main:app"
+
