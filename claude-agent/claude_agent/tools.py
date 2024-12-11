@@ -4,7 +4,7 @@ from typing import List
 
 import requests
 
-BASE_URL = "http://0.0.0.0:8000/api/v1"
+BASE_URL = "http://54.188.147.87:8000/api/v1"
 
 
 class ToolNames(str, Enum):
@@ -72,5 +72,6 @@ tools = [
             },
             "required": ["filepaths"],
         },
+        "cache_control": {"type": "ephemeral"},
     },
 ]

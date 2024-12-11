@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 from anthropic import Anthropic
 from claude_agent.tools import ToolNames, colpali_embed, colpali_search, tools
@@ -25,15 +26,18 @@ def process_tool_call(tool_name, tool_input):
 
 
 def chat_with_claude(user_message):
+    start_time = time.time()
+
     print(f"\n{'=' * 50}\nUser Message: {user_message}\n{'=' * 50}")
 
-    message = client.messages.create(
+    message = client.beta.prompt_caching.messages.create(
         system="You will use the email colpalisearch@gmail.com when using the colpali_search tool."
         "You will patiently wait for the result to return.",
         model=MODEL_NAME,
         max_tokens=4096,
         messages=[{"role": "user", "content": user_message}],
         tools=tools,
+        extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
     )
 
     print("\nInitial Response:")
@@ -52,7 +56,7 @@ def chat_with_claude(user_message):
 
         print(f"Tool Result: {tool_result}")
 
-        response = client.messages.create(
+        response = client.beta.prompt_caching.messages.create(
             model=MODEL_NAME,
             max_tokens=4096,
             messages=[
@@ -70,6 +74,7 @@ def chat_with_claude(user_message):
                 },
             ],
             tools=tools,
+            extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
         )
     else:
         response = message
@@ -78,7 +83,14 @@ def chat_with_claude(user_message):
         (block.text for block in response.content if hasattr(block, "text")),
         None,
     )
+
+    end_time = time.time()
+
     print(response.content)
     print(f"\nFinal Response: {final_response}")
+
+    print(f"Cached API call time: {end_time - start_time:.2f} seconds")
+    print(f"Cached API call input tokens: {response.usage.input_tokens}")
+    print(f"Cached API call output tokens: {response.usage.output_tokens}")
 
     return final_response
