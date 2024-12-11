@@ -1,10 +1,15 @@
-import json
+import os
+import sys
 
 from anthropic import Anthropic
 from claude_agent.tools import ToolNames, colpali_embed, colpali_search, tools
-from searchagent.utils import project_paths
+from dotenv import load_dotenv
+from rich import print
 
-client = Anthropic()
+load_dotenv()
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 MODEL_NAME = "claude-3-5-sonnet-20241022"
 
 
@@ -13,9 +18,10 @@ def process_tool_call(tool_name, tool_input):
         return colpali_search(
             tool_input["query"], tool_input["top_k"], tool_input["email"]
         )
-
-    if tool_name == ToolNames.colpali_embed:
+    elif tool_name == ToolNames.colpali_embed:
         return colpali_embed(tool_input["filepaths"])
+    else:
+        raise ValueError(f"Unsupported tool: {tool_name}")
 
 
 def chat_with_claude(user_message):
@@ -76,14 +82,3 @@ def chat_with_claude(user_message):
     print(f"\nFinal Response: {final_response}")
 
     return final_response
-
-
-# Example usage
-filepaths = [
-    f"{project_paths.SINGLE_FILE_DIR}/ColPali_Efficient_Document_Retrieval_with_Vision_Language_Models.pdf"
-    f"{project_paths.PDF_DIR}/Attention_Is_All_You_Need.pdf"
-]
-
-chat_with_claude("Find a PDF page on Scaled Dot-Product Attention")
-chat_with_claude("Find a PDF page on Multi-Head Attention")
-chat_with_claude(f"Help me embed these PDF files: {json.dumps(filepaths)}")

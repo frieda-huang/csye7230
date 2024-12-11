@@ -4,7 +4,7 @@ from typing import List
 
 import requests
 
-BASE_URL = "http://127.0.0.1:8000/api/v1"
+BASE_URL = "http://0.0.0.0:8000/api/v1"
 
 
 class ToolNames(str, Enum):
