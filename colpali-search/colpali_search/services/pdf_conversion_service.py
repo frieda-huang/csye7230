@@ -37,7 +37,9 @@ class PDFConversionService:
 
     def convert_single_pdf2image(self, pdf_file: UploadFile) -> SinglePDFConversion:
         bytes = asyncio.run(pdf_file.read())
-        single_pdf_images = convert_from_bytes(bytes, thread_count=3)
+        single_pdf_images = convert_from_bytes(
+            bytes, thread_count=3, use_pdftocairo=True, fmt="jpeg"
+        )
         total_pages = len(single_pdf_images)
         metadata = self._generate_images_metadata(
             filename=pdf_file.filename,
