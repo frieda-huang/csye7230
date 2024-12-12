@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "anthropic>=0.40.0",
+    "pytest>=8.3.4",
     "python-dotenv>=1.0.1",
     "requests>=2.32.3",
     "typer>=0.15.1",
@@ -15,5 +16,5 @@ dependencies = [
 members = ["claude-agent"]
 
 [project.scripts]
-searchagent = "main:app"
+searchagent = "claude_agent.main:app"
 

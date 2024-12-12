@@ -4,18 +4,20 @@ from typing import List
 
 import requests
 
-BASE_URL = "http://54.188.147.87:8000/api/v1"
+COLPALI_BASE_URL = "http://54.188.147.87:8000/api/v1"
 
 
 class ToolNames(str, Enum):
     colpali_search = "colpali_search"
     colpali_embed = "colpali_embed"
+    colpali_delete_file = "colpali_delete_file"
+    colpali_get_all_files = "colpali_get_all_files"
 
 
 def colpali_search(query: str, top_k: int, email: str) -> dict:
     try:
         json_body = {"query": query, "top_k": top_k, "email": email}
-        response = requests.post(f"{BASE_URL}/search", json=json_body)
+        response = requests.post(f"{COLPALI_BASE_URL}/search", json=json_body)
         result = response.json()
         return json.dumps(result)
     except Exception as e:
@@ -28,9 +30,27 @@ def colpali_embed(filepaths: List[str]):
             ("files", (filepath, open(filepath, "rb"), "application/pdf"))
             for filepath in filepaths
         ]
-        response = requests.post(f"{BASE_URL}/embeddings/files", files=files)
+        response = requests.post(f"{COLPALI_BASE_URL}/embeddings/files", files=files)
         result = response.json()
         return json.dumps(result["metadata"])
+    except Exception as e:
+        return f"Error: {e}"
+
+
+def colpali_delete_file(id: int):
+    try:
+        response = requests.delete(f"{COLPALI_BASE_URL}/files/{id}")
+        result = response.json()
+        return json.dumps(result)
+    except Exception as e:
+        return f"Error: {e}"
+
+
+def colpali_get_all_files():
+    try:
+        response = requests.get(f"{COLPALI_BASE_URL}/files/")
+        result = response.json()
+        return json.dumps(result)
     except Exception as e:
         return f"Error: {e}"
 
@@ -72,6 +92,25 @@ tools = [
             },
             "required": ["filepaths"],
         },
+    },
+    {
+        "name": "colpali_delete_file",
+        "description": "Delete embedded files from the system",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "The id of the file that the user intends to delete",
+                }
+            },
+            "required": ["id"],
+        },
+    },
+    {
+        "name": "colpali_get_all_files",
+        "description": "Get all embedded files",
+        "input_schema": {"type": "object", "properties": {}, "required": []},
         "cache_control": {"type": "ephemeral"},
     },
 ]
