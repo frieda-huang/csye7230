@@ -18,21 +18,21 @@ SearchAgent is a CLI tool that integrates ColPali and Claude 3.5 Sonnet for mana
 
 **Get help**
 
-`searchagent --help`
+- `searchagent --help`
 
 **Search for a page on a specific topic**
 
-`searchagent pa "Find me a page on multi-head attention"`
+- `searchagent pa "Find me a page on multi-head attention"`
 
 **Embed a PDF file**
 _Caveat: You must provide a valid file path._
 
-`searchagent pa "Embed the paper at this path: /path/to/attention_is_all_you_need.pdf"`
+- `searchagent pa "Embed the paper at this path: /path/to/attention_is_all_you_need.pdf"`
 
 **Delete a PDF file**
 _Caveat: You must provide a valid file id number_
 
-`searchagent pa "Delete a file with an id of 19"`
+- `searchagent pa "Delete a file with an id of 19"`
 
 **Get all embedded files**
-`searchagent pa "Get all embedded files"`
+- `searchagent pa "Get all embedded files"`
