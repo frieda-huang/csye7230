@@ -5,13 +5,40 @@ from typing import List
 import requests
 
 COLPALI_BASE_URL = "http://54.188.147.87:8000/api/v1"
-
+CODE_SEARCH_BASE_URL = "http://127.0.0.1:8000/api/v1"
 
 class ToolNames(str, Enum):
     colpali_search = "colpali_search"
     colpali_embed = "colpali_embed"
     colpali_delete_file = "colpali_delete_file"
     colpali_get_all_files = "colpali_get_all_files"
+    code_search_embed = "code_search_embed"
+    code_search = "code_search"
+
+
+def code_search_embed(filepaths: List[str]):
+    print("inside code search embed tool")
+    try:
+        files = [
+            ("files", (filepath, open(filepath, "rb"), "text/plain"))
+            for filepath in filepaths
+        ]
+        response = requests.post(f"{CODE_SEARCH_BASE_URL}/upload/files", files=files)
+
+        result = response.json()
+        return json.dumps(result)
+    except Exception as e:
+        return f"Error: {e}"
+
+def code_search(query: str):
+    try:
+        data = {"query": query}
+        response = requests.post(f"{CODE_SEARCH_BASE_URL}/search", data=data)
+        result = response.json()
+        return json.dumps(result)
+    except Exception as e:
+        return f"Error: {e}"
+
 
 
 def colpali_search(query: str, top_k: int, email: str) -> dict:
@@ -112,5 +139,34 @@ tools = [
         "description": "Get all embedded files",
         "input_schema": {"type": "object", "properties": {}, "required": []},
         "cache_control": {"type": "ephemeral"},
+    },
+    {
+        "name": "code_search",
+        "description": "Performs a search based on a query and retrieves relevant code snippets",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "The search query; it must not be empty",
+                },
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "code_search_embed",
+        "description": "Generates embeddings for text-based code files",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "filepaths": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "A list of file paths to the code files",
+                }
+            },
+            "required": ["filepaths"],
+        },
     },
 ]

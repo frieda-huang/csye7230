@@ -18,3 +18,6 @@ members = ["claude-agent"]
 [project.scripts]
 searchagent = "claude_agent.main:app"
 
+[tool.uv]
+package = true
+
