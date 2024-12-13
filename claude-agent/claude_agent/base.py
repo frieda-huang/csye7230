@@ -10,6 +10,8 @@ from claude_agent.tools import (
     colpali_get_all_files,
     colpali_search,
     tools,
+    code_search,
+    code_search_embed,
 )
 from dotenv import load_dotenv
 from rich import print
@@ -37,6 +39,10 @@ def process_tool_call(tool_name, tool_input):
 
     elif tool_name == ToolNames.colpali_get_all_files:
         return colpali_get_all_files()
+    elif tool_name == ToolNames.code_search:
+        return code_search(tool_input["query"])
+    elif tool_name == ToolNames.code_search_embed:
+        return code_search_embed(tool_input["filepaths"])
 
     else:
         raise ValueError(f"Unsupported tool: {tool_name}")

@@ -111,10 +111,10 @@ async def upload_files(files: List[UploadFile], db: Session = Depends(get_db)):
 @app.post("/api/v1/search")
 def search_code(query: str = Form(...), db: Session = Depends(get_db)):
     # Check if the query already exists in the cache
-    cached_result = query_processor.get_cached_search_result(db=db, query=query)
+    # cached_result = query_processor.get_cached_search_result(db=db, query=query)
 
-    if cached_result:
-        return {"query": query, "response": cached_result.response}
+    # if cached_result:
+    #     return {"query": query, "response": cached_result.response}
 
     # Search for similar files if not cached
     search_results = query_processor.search_similar_files(db=db, query=query)
@@ -126,11 +126,12 @@ def search_code(query: str = Form(...), db: Session = Depends(get_db)):
     file_ids = [result[0] for result in search_results]
     context = query_processor.get_context_from_files(db=db, file_ids=file_ids)
 
-    # Generate RAG response using OpenAI
-    response = rag_processor.generate_rag_response(query=query, context=context)
+    # # Generate RAG response using OpenAI
+    # response = rag_processor.generate_rag_response(query=query, context=context)
 
-    # Cache the query, result, and response
-    query_processor.save_search_result(db=db, query=query, search_results=search_results, response=response)
+    # # Cache the query, result, and response
+    # query_processor.save_search_result(db=db, query=query, search_results=search_results, response=response)
 
-    return {"query": query, "response": response}
+    # return {"query": query, "response": response}
+    return context
 

@@ -55,6 +55,36 @@ def pa(query: str):
     chat_with_claude(query, verbose=state["verbose"])
 
 
+
+@app.command()
+def cs(query: str):
+    """
+    Code Search and Embed: Handle code search and code embedding tasks.
+
+    Args:
+        query (str): The user's query specifying the action or information needed.
+
+    Examples:
+        Search for a code snippet on a specific topic:
+            ```bash
+            searchagent cs "Find me code on sorting algorithms"
+            ```
+
+        Embed a code file:
+            ```bash
+            searchagent cs "Embed the code file at this path: /path/to/code.py"
+            ```
+
+        Embed multiple code files:
+            ```bash
+            searchagent cs "Embed the code files at these paths: ['/path/to/code1.py', '/path/to/code2.py']"
+            ```
+    """ 
+   
+    # Use chat_with_claude for code search as well
+    chat_with_claude(query, verbose=state["verbose"])
+    
+    
 @app.callback()
 def main(verbose: bool = False):
     """
