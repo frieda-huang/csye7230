@@ -36,3 +36,14 @@ _Caveat: You must provide a valid file id number_
 
 **Get all embedded files**
 `searchagent pa "Get all embedded files"`
+
+## Examples
+
+1. `search pa "Find the page with topics about multi-head attention"`
+   ![pa_search](./pa_search.png)
+
+2. `search --verbose pa "Find the page with topics about multi-head attention"` (_verbose mode_)
+   ![pa_search_verbose](./pa_search_verbose.png)
+
+3. `searchagent pa "Embed the file at this path for me: '/Users/friedahuang/Downloads/resume.pdf' "`
+   ![pa_embed](./pa_embed.png)
